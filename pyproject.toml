@@ -16,3 +16,6 @@ memoro = "memoro.cli:main"
 
 [tool.setuptools]
 packages = ["memoro"]
+
+[tool.setuptools.package-data]
+memoro = ["mapa.html", "d3-hierarchy.min.js"]
