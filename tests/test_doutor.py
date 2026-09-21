@@ -166,5 +166,20 @@ class TesteAdocao(ComPorta):
         self.assertIn("0 adotados", saida)
         self.assertEqual(len(self.eventos()), antes)
 
+    def test_adotar_tudo_le_o_acervo_uma_vez_e_nao_uma_vez_por_fato(self):
+        # medido: 1.000 fatos levavam 134 s porque cada adoção relia o acervo inteiro (quadrático)
+        from unittest import mock
+        from memoro.repositorio import RepositorioDeFatos
+        for i in range(30):
+            self.escrever("hobby", "item-%02d" % i, desc="descrição única número %d zq%d" % (i, i * 7919))
+        original = RepositorioDeFatos.todos
+        with mock.patch.object(RepositorioDeFatos, "todos", autospec=True, side_effect=original) as todos:
+            codigo, saida, erro = self.cli("adotar-tudo", "--motivo", "lote")
+        self.assertEqual(codigo, 0, erro)
+        self.assertIn("30 adotados", saida)
+        self.assertLessEqual(todos.call_count, 4)
+        self.assertEqual(self.tipos(), [])
+        self.assertEqual(len([e for e in self.eventos() if e.op == "adocao" and e.motivo == "lote"]), 30)
+
     def test_adotar_tudo_exige_motivo(self):
         self.assertNotEqual(self.cli("adotar-tudo")[0], 0)
