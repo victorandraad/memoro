@@ -4,6 +4,7 @@ import difflib
 import json
 import os
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 from memoro.dominio import Fato, IdDeFato, IdInvalido
@@ -90,25 +91,58 @@ class RepositorioDeFatos:
 
     def gravar(self, fato):
         destino = self.caminho_de(fato.id)
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        texto = self._escritor.escrever(fato)
-        fd, tmp = tempfile.mkstemp(prefix=".", suffix=".tmp", dir=str(destino.parent))
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as arq:
-                arq.write(texto)
-            os.replace(tmp, str(destino))
-        except Exception:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-            raise
+        self._gravar_atomico(destino, self._escritor.escrever(fato))
         return destino
+
+    def mover_para_lixeira(self, ident, motivo, usuario, dia):
+        origem = self.caminho_de(ident)
+        fato = self._ler(ident, origem)
+        pasta = self._raiz / "areas" / "_lixeira" / ident.area
+        pasta.mkdir(parents=True, exist_ok=True)
+        destino = pasta / (ident.nome + ".md")
+        n = 2
+        # ponytail: sufixo linear -2,-3; índice se um nome encher a lixeira
+        while destino.exists():
+            destino = pasta / ("%s-%d.md" % (ident.nome, n))
+            n += 1
+        extras = {
+            "motivo": motivo,
+            "removido_por": usuario,
+            "removido_em": dia.strftime("%Y-%m-%d"),
+        }
+        self._gravar_atomico(destino, self._escritor.escrever(fato, extras=extras))
+        origem.unlink()
+        return destino
+
+    def purgar(self, dias, hoje):
+        lixeira = self._raiz / "areas" / "_lixeira"
+        if not lixeira.is_dir():
+            return []
+        if hasattr(hoje, "date") and callable(hoje.date):
+            try:
+                hoje = hoje.date()
+            except TypeError:
+                pass
+        removidos = []
+        for caminho in sorted(lixeira.rglob("*.md")):
+            if not caminho.is_file():
+                continue
+            campos, _ = self._leitor.ler(caminho.read_text(encoding="utf-8", errors="replace"))
+            bruto = campos.get("removido_em") or ""
+            try:
+                dia = datetime.strptime(bruto, "%Y-%m-%d").date()
+            except (TypeError, ValueError):
+                continue
+            if (hoje - dia).days > dias:
+                caminho.unlink()
+                removidos.append(caminho)
+        return removidos
 
     def inicializar(self):
         self._raiz.mkdir(parents=True, exist_ok=True)
         (self._raiz / "areas").mkdir(exist_ok=True)
         (self._raiz / "areas" / "_lixeira").mkdir(exist_ok=True)
+        self._criar_se_falta(self._raiz / ".gitignore", ".memoro.lock\n")
         self._criar_se_falta(
             self._raiz / "lentes.json",
             json.dumps({"dia-a-dia": ["casa", "trabalho"], "nenhuma": []}, ensure_ascii=False)
@@ -133,6 +167,20 @@ class RepositorioDeFatos:
             uses=tuple(campos.get("uses") or ()),
             scope=tuple(campos.get("scope") or ()),
         )
+
+    def _gravar_atomico(self, destino, texto):
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(prefix=".", suffix=".tmp", dir=str(destino.parent))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as arq:
+                arq.write(texto)
+            os.replace(tmp, str(destino))
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
 
     def _criar_se_falta(self, caminho, conteudo):
         if not caminho.exists():
