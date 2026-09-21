@@ -26,6 +26,8 @@
   --fato-s: 55%;
   --fato-l: 48%;
   --amostra: 210;
+  --rotulo-s: 72%;
+  --rotulo-l: 22%;
   --sombra: 0 1px 8px hsl(210 20% 20% / 0.12);
   --fs-1: 12px;
   --fs-2: 13px;
@@ -53,12 +55,14 @@
     --foco: #4fc3cc;
     --fato-s: 60%;
     --fato-l: 62%;
+    --rotulo-s: 52%;
+    --rotulo-l: 80%;
     --sombra: 0 1px 10px hsl(210 30% 4% / 0.45);
     color-scheme: dark;
   }
 }
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow-x: hidden; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -156,8 +160,10 @@ h1 { font-size: var(--fs-5); font-weight: 600; line-height: 1.15; margin: 0; }
   flex: 0 0 14px;
 }
 .am-svg .fato, .ico-estado .fato { cursor: default; --matiz: var(--amostra); }
-main { flex: 1; min-height: 0; position: relative; }
+main { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 svg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -229,8 +235,11 @@ circle, path, text { transition: opacity 0.15s; }
   stroke-width: 3px;
   font-weight: 600;
 }
+.rotulo.area, .rotulo.subarea {
+  fill: hsl(var(--matiz) var(--rotulo-s) var(--rotulo-l));
+  font-weight: 600;
+}
 .rotulo.area { text-transform: uppercase; letter-spacing: 0.04em; }
-.rotulo.subarea { fill: var(--mute); font-weight: 500; }
 .rotulo.fato { font-weight: 400; }
 :focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
 @media (max-width: 600px) {
@@ -239,7 +248,7 @@ circle, path, text { transition: opacity 0.15s; }
   #painel {
     top: auto;
     bottom: 0;
-    max-height: 60%;
+    max-height: 45vh;
     overflow: auto;
     width: 100%;
     border-radius: 6px 6px 0 0;
@@ -277,7 +286,7 @@ circle, path, text { transition: opacity 0.15s; }
 </ul>
 </details>
 <main>
-<svg viewBox="0 0 1000 1000" role="group" aria-label="mapa da memória"></svg>
+<svg viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role="group" aria-label="mapa da memória"></svg>
 <div class="zoom">
 <button type="button" id="zoom-mais" aria-label="aproximar">+</button>
 <button type="button" id="zoom-menos" aria-label="afastar">-</button>
@@ -293,10 +302,23 @@ __D3_HIERARCHY__
 (function () {
   var NS = "http://www.w3.org/2000/svg";
   var LIMIAR_ARRASTO = 5;
+  var PACK = 1000;
   var CX = 500;
   var CY = 500;
   var RETICENCIAS = "…";
-  var RAIO_MIN_TELA = 10;
+  var RAIO_MIN_FATO = 11;
+  var RAIO_MIN_AREA = 28;
+  var RAIO_MIN_SUB = 22;
+  var FONTE_FATO_MIN = 7;
+  var FONTE_FATO_MAX = 13;
+  var FONTE_AREA_MIN = 10;
+  var FONTE_AREA_MAX = 15;
+  var FONTE_SUB_MIN = 8;
+  var FONTE_SUB_MAX = 12;
+  var MAX_LINHAS = 3;
+  var MARGEM_VISTA = 24;
+  var COEF = 0.56;
+  var _ctxMedida = null;
 
   function criar(tag, attrs) {
     var n = document.createElement(tag);
@@ -335,19 +357,223 @@ __D3_HIERARCHY__
     return t;
   }
 
-  function larguraEstimada(texto, fontePx) {
-    return (texto || "").length * fontePx * 0.62;
+  function fonteFamilia() {
+    try {
+      return getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
+    } catch (e) {
+      return "system-ui, sans-serif";
+    }
   }
 
-  function encurtarRotulo(texto, maxPx, fontePx) {
+  function ctxMedida() {
+    if (_ctxMedida) return _ctxMedida;
+    try {
+      _ctxMedida = document.createElement("canvas").getContext("2d");
+    } catch (e) {
+      _ctxMedida = null;
+    }
+    return _ctxMedida;
+  }
+
+  function medir(texto, fontePx, peso, caixaAlta) {
+    var t = texto || "";
+    if (caixaAlta) t = t.toUpperCase();
+    var ctx = ctxMedida();
+    if (ctx) {
+      ctx.font = (peso || 400) + " " + fontePx + "px " + fonteFamilia();
+      var w = ctx.measureText(t).width;
+      if (caixaAlta) w *= 1.04;
+      return w;
+    }
+    return t.length * fontePx * COEF * (caixaAlta ? 1.04 : 1);
+  }
+
+  function corda(r, dy, margem) {
+    var ri = Math.max(0, r - (margem || 0));
+    var d = Math.abs(dy);
+    if (d >= ri) return 0;
+    return 2 * Math.sqrt(ri * ri - d * d);
+  }
+
+  function pecasDoNome(nome) {
+    var pecas = [], buf = "", i, ch;
+    nome = nome || "";
+    for (i = 0; i < nome.length; i++) {
+      ch = nome.charAt(i);
+      if (ch === "-" || ch === "/") {
+        if (buf) pecas.push(buf);
+        pecas.push(ch);
+        buf = "";
+      } else buf += ch;
+    }
+    if (buf) pecas.push(buf);
+    return pecas.length ? pecas : [nome];
+  }
+
+  function juntarPecas(pecas, a, b) {
+    var s = "", i;
+    for (i = a; i < b; i++) s += pecas[i];
+    return s;
+  }
+
+  function encurtar(texto, maxPx, fontePx, peso, caixaAlta) {
     if (!texto) return "";
-    if (larguraEstimada(texto, fontePx) <= maxPx) return texto;
+    if (medir(texto, fontePx, peso, caixaAlta) <= maxPx) return texto;
     var i, s;
     for (i = texto.length - 1; i >= 1; i--) {
       s = texto.slice(0, i) + RETICENCIAS;
-      if (larguraEstimada(s, fontePx) <= maxPx) return s;
+      if (medir(s, fontePx, peso, caixaAlta) <= maxPx) return s;
     }
     return RETICENCIAS;
+  }
+
+  function pularSep(pecas, i) {
+    while (i < pecas.length && (pecas[i] === "-" || pecas[i] === "/")) i++;
+    return i;
+  }
+
+  function empacotar(nome, nLinhas, larguras, fontePx, ellipsis, peso, caixaAlta) {
+    var pecas = pecasDoNome(nome);
+    var linhas = [];
+    var i = 0, L, j, cand, last;
+    peso = peso || 400;
+    caixaAlta = !!caixaAlta;
+    for (L = 0; L < nLinhas; L++) {
+      i = pularSep(pecas, i);
+      if (i >= pecas.length) break;
+      if (L === nLinhas - 1) {
+        cand = juntarPecas(pecas, i, pecas.length);
+        if (medir(cand, fontePx, peso, caixaAlta) <= larguras[L]) {
+          linhas.push(cand);
+          i = pecas.length;
+        } else if (ellipsis) {
+          linhas.push(encurtar(cand, larguras[L], fontePx, peso, caixaAlta));
+          i = pecas.length;
+        } else return null;
+      } else {
+        last = -1;
+        for (j = i + 1; j <= pecas.length; j++) {
+          cand = juntarPecas(pecas, i, j);
+          if (medir(cand, fontePx, peso, caixaAlta) <= larguras[L]) last = j;
+          else break;
+        }
+        if (last > i && (pecas[last - 1] === "-" || pecas[last - 1] === "/") && last - 1 > i) last--;
+        if (last <= i) {
+          if (!ellipsis) return null;
+          linhas.push(encurtar(pecas[i], larguras[L], fontePx, peso, caixaAlta));
+          i = pularSep(pecas, i + 1);
+          continue;
+        }
+        linhas.push(juntarPecas(pecas, i, last));
+        i = last;
+      }
+    }
+    if (i < pecas.length) return ellipsis ? linhas : null;
+    return linhas.length ? linhas : null;
+  }
+
+  function linhasNoDisco(nome, n, rTela, fs, lh, margem, ellipsis, peso, caixaAlta) {
+    var dys = [], larguras = [], i, dy;
+    for (i = 0; i < n; i++) {
+      dy = (i - (n - 1) / 2) * lh;
+      dys.push(dy);
+      larguras.push(corda(rTela, dy, margem));
+    }
+    var linhas = empacotar(nome, n, larguras, fs, ellipsis, peso, caixaAlta);
+    if (!linhas) return null;
+    return { fs: fs, linhas: linhas, dys: dys, lh: lh };
+  }
+
+  function layoutFato(nome, rTela) {
+    if (rTela < RAIO_MIN_FATO) return null;
+    var margem = Math.max(2, Math.min(4, rTela * 0.08));
+    var fs, n, lh, achado;
+    for (fs = FONTE_FATO_MAX; fs >= FONTE_FATO_MIN - 0.01; fs -= 0.5) {
+      lh = fs * 1.08;
+      for (n = 1; n <= MAX_LINHAS; n++) {
+        if (n * lh > 2 * (rTela - margem)) continue;
+        achado = linhasNoDisco(nome, n, rTela, fs, lh, margem, false, 400, false);
+        if (achado) return achado;
+      }
+    }
+    fs = FONTE_FATO_MIN;
+    lh = fs * 1.08;
+    for (n = MAX_LINHAS; n >= 1; n--) {
+      if (n * lh > 2 * (rTela - margem)) continue;
+      achado = linhasNoDisco(nome, n, rTela, fs, lh, margem, true, 400, false);
+      if (achado) return achado;
+    }
+    return null;
+  }
+
+  function anelUser(pack) {
+    var ch = pack.children || [];
+    var i, d, max = 0;
+    for (i = 0; i < ch.length; i++) {
+      d = Math.hypot(ch[i].x - pack.x, ch[i].y - pack.y) + ch[i].r;
+      if (d > max) max = d;
+    }
+    if (!max) return pack.r * 0.16;
+    return Math.max(0, pack.r - max);
+  }
+
+  function layoutGrupo(nome, rTela, anelTela, tipo) {
+    var fsMin = tipo === "area" ? FONTE_AREA_MIN : FONTE_SUB_MIN;
+    var fsMax = tipo === "area" ? FONTE_AREA_MAX : FONTE_SUB_MAX;
+    var rMin = tipo === "area" ? RAIO_MIN_AREA : RAIO_MIN_SUB;
+    var caixa = tipo === "area";
+    var peso = 600;
+    var fs, n, lh, dy, maxW, t, i, dys, larguras, linhas, fromEdge, arcLen, rArc, abertura;
+    if (rTela < rMin) return null;
+    abertura = tipo === "area" ? 2.5 : 2.2;
+    rArc = rTela - Math.max(4, Math.min(anelTela * 0.45, fsMax * 0.7));
+    arcLen = Math.max(0, rArc * abertura);
+    if (rTela >= 40 && arcLen >= 28) {
+      for (fs = fsMax; fs >= fsMin - 0.01; fs -= 0.5) {
+        if (medir(nome, fs, peso, caixa) <= arcLen * 0.94) {
+          return { fs: fs, texto: nome, curvo: true, abertura: abertura };
+        }
+      }
+      t = encurtar(nome, arcLen * 0.94, fsMin, peso, caixa);
+      if (t && t !== RETICENCIAS) {
+        return { fs: fsMin, texto: t, curvo: true, abertura: abertura };
+      }
+    }
+    for (fs = fsMax; fs >= fsMin - 0.01; fs -= 0.5) {
+      lh = fs * 1.08;
+      for (n = 1; n <= 2; n++) {
+        if (n * lh > Math.max(anelTela, rTela * 0.35)) continue;
+        fromEdge = Math.max(fs * 0.55, (anelTela - n * lh) * 0.5 + fs * 0.35);
+        dys = [];
+        larguras = [];
+        for (i = 0; i < n; i++) {
+          dy = -(rTela - fromEdge) + i * lh;
+          dys.push(dy);
+          larguras.push(corda(rTela, dy, 3));
+        }
+        linhas = empacotar(nome, n, larguras, fs, false, peso, caixa);
+        if (linhas) return { fs: fs, texto: null, linhas: linhas, dys: dys, lh: lh, curvo: false };
+      }
+    }
+    fs = fsMin;
+    lh = fs * 1.08;
+    fromEdge = Math.max(fs * 0.55, fs * 0.7);
+    dy = -(rTela - fromEdge);
+    maxW = corda(rTela, dy, 3);
+    t = encurtar(nome, maxW, fs, peso, caixa);
+    if (!t || t === RETICENCIAS) return null;
+    return { fs: fs, texto: t, dy: dy, curvo: false };
+  }
+
+  function limparFilhos(el) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function arcoTopo(cx, cy, r, abertura) {
+    var a0 = -Math.PI / 2 - abertura / 2;
+    var a1 = -Math.PI / 2 + abertura / 2;
+    return "M" + (cx + r * Math.cos(a0)) + "," + (cy + r * Math.sin(a0)) +
+      " A" + r + "," + r + " 0 0 1 " + (cx + r * Math.cos(a1)) + "," + (cy + r * Math.sin(a1));
   }
 
   function Mapa(dados) {
@@ -374,6 +600,10 @@ __D3_HIERARCHY__
     this.pinca = null;
     this.bloquearClique = false;
     this.rafRotulos = 0;
+    this.rafAjuste = 0;
+    this.ajusteManual = false;
+    this.packW = PACK;
+    this.packH = PACK;
     this.textoJson = document.getElementById("dados").textContent;
     this.etag = "";
   }
@@ -392,6 +622,7 @@ __D3_HIERARCHY__
     this.svg.addEventListener("pointercancel", function (e) { self.aoPointerUp(e); });
     this.svg.addEventListener("wheel", function (e) {
       e.preventDefault();
+      self.ajusteManual = true;
       var fator = Math.pow(1.0016, -e.deltaY);
       self.zoomEm(e.clientX, e.clientY, self.escala * fator);
     }, { passive: false });
@@ -411,6 +642,7 @@ __D3_HIERARCHY__
       self.zoomCentro(self.escala / 1.25);
     });
     document.getElementById("centralizar").addEventListener("click", function () {
+      self.ajusteManual = false;
       self.centralizar();
     });
     this.busca.addEventListener("input", function () { self.aoBuscar(); });
@@ -426,13 +658,15 @@ __D3_HIERARCHY__
         self.busca.focus();
       }
     });
-    window.addEventListener("resize", function () { self.pedirRotulos(); });
+    window.addEventListener("resize", function () { self.pedirAjuste(); });
+    window.addEventListener("load", function () { self.pedirAjuste(); });
   };
 
   Mapa.prototype.desenhar = function (dados, preservar) {
     var focoId = preservar && this.foco ? this.foco.id : null;
     var focoTipo = preservar && this.foco ? this.foco.tipo : null;
     var lente = preservar ? this.lente : null;
+    var prevK = this.escala, prevTx = this.tx, prevTy = this.ty, prevManual = this.ajusteManual;
     this.dados = dados;
     if (lente && !(lente in dados.lentes)) lente = null;
     this.lente = lente;
@@ -453,8 +687,10 @@ __D3_HIERARCHY__
     var hierarquia = d3.hierarchy(arvore, function (d) { return d.filhos; })
       .sum(function (d) { return d.value || 0; })
       .sort(function (a, b) { return b.value - a.value; });
-    d3.pack().size([1000, 1000]).padding(function (d) {
-      return d.depth === 0 ? 14 : d.depth === 1 ? 8 : 3;
+    d3.pack().size([PACK, PACK]).padding(function (d) {
+      if (d.depth === 0) return 12;
+      if (d.depth === 1) return 16;
+      return 10;
     })(hierarquia);
 
     var nosPack = hierarquia.descendants().slice(1);
@@ -473,7 +709,9 @@ __D3_HIERARCHY__
         "data-id": d.id
       });
       circ.style.setProperty("--matiz", String(d.matiz));
-      circ.appendChild(tituloSvg(d.tipo === "fato" ? (d.rotulo || d.nome) : d.nome));
+      circ.appendChild(tituloSvg(
+        d.tipo === "fato" ? (d.rotulo || d.nome) : (d.tipo === "subarea" ? d.id : d.nome)
+      ));
       if (d.tipo === "fato") {
         if (d.orfao) circ.classList.add("orfao");
         if (d.ambiguos && d.ambiguos.length) circ.classList.add("ambiguo");
@@ -516,18 +754,30 @@ __D3_HIERARCHY__
     for (i = 0; i < nosPack.length; i++) {
       p = nosPack[i];
       d = p.data;
+      var arco = null;
+      if (d.tipo === "area" || d.tipo === "subarea") {
+        arco = svgEl("path", {
+          id: "m-arco-" + i,
+          fill: "none",
+          stroke: "none",
+          "pointer-events": "none"
+        });
+        this.grupo.appendChild(arco);
+      }
       txt = svgEl("text", {
         class: "rotulo " + d.tipo,
         x: p.x,
-        y: (d.tipo === "area" || d.tipo === "subarea") ? p.y - p.r + 18 : p.y + 3
+        y: p.y
       });
-      txt.textContent = d.tipo === "fato" ? d.rotulo : d.nome;
+      txt.style.setProperty("--matiz", String(d.matiz));
       this.grupo.appendChild(txt);
       this.rotulos.push({
         el: txt,
+        arco: arco,
+        arcoId: arco ? "m-arco-" + i : null,
         pack: p,
         tipo: d.tipo,
-        nome: d.tipo === "fato" ? (d.rotulo || d.nome) : d.nome
+        nome: d.tipo === "fato" ? (d.rotulo || d.nome) : (d.tipo === "subarea" ? d.id : d.nome)
       });
     }
 
@@ -548,7 +798,17 @@ __D3_HIERARCHY__
     } else {
       this.aplicarFiltros();
     }
-    this.atualizarRotulos();
+    if (preservar && prevManual) {
+      this.escala = prevK;
+      this.tx = prevTx;
+      this.ty = prevTy;
+      this.ajusteManual = true;
+      this.aplicarTransform();
+    } else {
+      this.ajusteManual = false;
+      this.enquadrarPacote();
+    }
+    this.pedirAjuste();
   };
 
   Mapa.prototype.montarArvore = function (dados) {
@@ -619,19 +879,139 @@ __D3_HIERARCHY__
     }
   };
 
-  Mapa.prototype.pontoSvg = function (clientX, clientY) {
+  Mapa.prototype.metricaSvg = function () {
     var r = this.svg.getBoundingClientRect();
     var w = r.width || 1;
     var h = r.height || 1;
+    var s = Math.min(w / this.packW, h / this.packH);
     return {
-      x: (clientX - r.left) / w * 1000,
-      y: (clientY - r.top) / h * 1000
+      w: w,
+      h: h,
+      s: s,
+      ox: (w - this.packW * s) / 2,
+      oy: (h - this.packH * s) / 2,
+      left: r.left,
+      top: r.top
+    };
+  };
+
+  Mapa.prototype.gavetaEmbaixo = function () {
+    return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
+  };
+
+  Mapa.prototype.rectVisivel = function () {
+    var m = this.metricaSvg();
+    var vis = { x: 0, y: 0, w: m.w, h: m.h };
+    if (this.painel && !this.painel.hidden) {
+      var p = this.painel.getBoundingClientRect();
+      var svg = this.svg.getBoundingClientRect();
+      if (this.gavetaEmbaixo()) {
+        var topPainel = p.top - svg.top;
+        if (topPainel < vis.h) vis.h = Math.max(48, topPainel);
+      } else {
+        var leftPainel = p.left - svg.left;
+        if (leftPainel > vis.w * 0.3 && leftPainel < vis.w) vis.w = Math.max(48, leftPainel);
+      }
+    }
+    vis.x += MARGEM_VISTA;
+    vis.y += MARGEM_VISTA;
+    vis.w = Math.max(40, vis.w - 2 * MARGEM_VISTA);
+    vis.h = Math.max(40, vis.h - 2 * MARGEM_VISTA);
+    return vis;
+  };
+
+  Mapa.prototype.enquadrarPacote = function () {
+    var m = this.metricaSvg();
+    var vis = this.rectVisivel();
+    var k = Math.min(vis.w / (this.packW * m.s), vis.h / (this.packH * m.s));
+    k = Math.min(12, Math.max(0.2, k));
+    var sideW = this.packW * k * m.s;
+    var sideH = this.packH * k * m.s;
+    var px0 = vis.x + (vis.w - sideW) / 2;
+    var py0 = vis.y + (vis.h - sideH) / 2;
+    this.escala = k;
+    this.tx = (px0 - m.ox) / m.s;
+    this.ty = (py0 - m.oy) / m.s;
+    this.aplicarTransform();
+  };
+
+  Mapa.prototype.packDoFoco = function () {
+    if (!this.foco) return null;
+    var i, item;
+    for (i = 0; i < this.discos.length; i++) {
+      item = this.discos[i];
+      if (item.dado === this.foco || (item.dado.id === this.foco.id && item.dado.tipo === this.foco.tipo)) {
+        return item.pack;
+      }
+    }
+    return null;
+  };
+
+  Mapa.prototype.centralizarNo = function (pack) {
+    if (!pack) return;
+    var m = this.metricaSvg();
+    var vis = this.rectVisivel();
+    var k = this.escala;
+    this.tx = (vis.x + vis.w / 2 - m.ox) / m.s - pack.x * k;
+    this.ty = (vis.y + vis.h / 2 - m.oy) / m.s - pack.y * k;
+    this.aplicarTransform();
+  };
+
+  Mapa.prototype.garantirVisivel = function (pack) {
+    if (!pack) return;
+    var m = this.metricaSvg();
+    var vis = this.rectVisivel();
+    var k = this.escala;
+    var cx = m.ox + (this.tx + pack.x * k) * m.s;
+    var cy = m.oy + (this.ty + pack.y * k) * m.s;
+    var r = pack.r * k * m.s;
+    var pad = 8;
+    var dx = 0, dy = 0;
+    if (cx - r < vis.x + pad) dx = vis.x + pad - (cx - r);
+    if (cx + r > vis.x + vis.w - pad) dx = vis.x + vis.w - pad - (cx + r);
+    if (cy - r < vis.y + pad) dy = vis.y + pad - (cy - r);
+    if (cy + r > vis.y + vis.h - pad) dy = vis.y + vis.h - pad - (cy + r);
+    if (this.gavetaEmbaixo() && (dy !== 0 || dx !== 0)) {
+      this.centralizarNo(pack);
+      return;
+    }
+    if (dx || dy) {
+      this.tx += dx / m.s;
+      this.ty += dy / m.s;
+      this.aplicarTransform();
+    }
+  };
+
+  Mapa.prototype.pedirAjuste = function () {
+    var self = this;
+    if (this.rafAjuste) return;
+    this.rafAjuste = requestAnimationFrame(function () {
+      self.rafAjuste = 0;
+      self.aplicarAjuste();
+    });
+  };
+
+  Mapa.prototype.aplicarAjuste = function () {
+    var pack = this.packDoFoco();
+    if (!this.ajusteManual) this.enquadrarPacote();
+    if (pack) {
+      if (this.gavetaEmbaixo() && this.ajusteManual) this.centralizarNo(pack);
+      else this.garantirVisivel(pack);
+    }
+    this.atualizarRotulos();
+  };
+
+  Mapa.prototype.pontoSvg = function (clientX, clientY) {
+    var m = this.metricaSvg();
+    return {
+      x: (clientX - m.left - m.ox) / m.s,
+      y: (clientY - m.top - m.oy) / m.s
     };
   };
 
   Mapa.prototype.zoomEm = function (clientX, clientY, nova) {
     var k0 = this.escala;
-    var k1 = Math.min(12, Math.max(0.5, nova));
+    var k1 = Math.min(12, Math.max(0.2, nova));
     var p = this.pontoSvg(clientX, clientY);
     var wx = (p.x - this.tx) / k0;
     var wy = (p.y - this.ty) / k0;
@@ -644,14 +1024,13 @@ __D3_HIERARCHY__
 
   Mapa.prototype.zoomCentro = function (nova) {
     var r = this.svg.getBoundingClientRect();
+    this.ajusteManual = true;
     this.zoomEm(r.left + r.width / 2, r.top + r.height / 2, nova);
   };
 
   Mapa.prototype.centralizar = function () {
-    this.escala = 1;
-    this.tx = 0;
-    this.ty = 0;
-    this.aplicarTransform();
+    this.ajusteManual = false;
+    this.enquadrarPacote();
     this.pedirRotulos();
   };
 
@@ -686,10 +1065,11 @@ __D3_HIERARCHY__
     if (!this.ponteiros.has(e.pointerId)) return;
     this.ponteiros.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (this.pinca && this.ponteiros.size >= 2) {
+      this.ajusteManual = true;
       var pts = Array.from(this.ponteiros.values());
       var dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
       var mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
-      var k1 = Math.min(12, Math.max(0.5, this.pinca.escala * (dist / this.pinca.dist)));
+      var k1 = Math.min(12, Math.max(0.2, this.pinca.escala * (dist / this.pinca.dist)));
       var p = this.pontoSvg(mid.x, mid.y);
       this.escala = k1;
       this.tx = p.x - this.pinca.wx * k1;
@@ -703,10 +1083,10 @@ __D3_HIERARCHY__
       var dy = e.clientY - this.arrasto.y;
       if (Math.hypot(dx, dy) > LIMIAR_ARRASTO) this.arrasto.moveu = true;
       if (this.arrasto.moveu) {
-        var ret = this.svg.getBoundingClientRect();
-        var sx = 1000 / (ret.width || 1);
-        this.tx = this.arrasto.tx + dx * sx;
-        this.ty = this.arrasto.ty + dy * sx;
+        this.ajusteManual = true;
+        var met = this.metricaSvg();
+        this.tx = this.arrasto.tx + dx / met.s;
+        this.ty = this.arrasto.ty + dy / met.s;
         this.aplicarTransform();
       }
     }
@@ -755,7 +1135,7 @@ __D3_HIERARCHY__
     this.foco = no;
     this.mostrarPainel(no);
     this.aplicarFiltros();
-    this.atualizarRotulos();
+    this.pedirAjuste();
   };
 
   Mapa.prototype.limpar = function () {
@@ -771,6 +1151,7 @@ __D3_HIERARCHY__
   Mapa.prototype.fecharPainel = function () {
     this.painel.hidden = true;
     this.painel.replaceChildren();
+    this.pedirAjuste();
   };
 
   Mapa.prototype.naLente = function (no) {
@@ -872,47 +1253,95 @@ __D3_HIERARCHY__
     });
   };
 
-  Mapa.prototype.filhosVisiveis = function (pack, k, px, limiar) {
-    var filhos = pack.children || [];
-    var i;
-    for (i = 0; i < filhos.length; i++) {
-      if (filhos[i].r * k * px >= limiar) return true;
-    }
-    return false;
-  };
-
   Mapa.prototype.atualizarRotulos = function () {
-    var w = this.svg.clientWidth || 1000;
+    var m = this.metricaSvg();
     var k = this.escala;
-    var px = w / 1000;
-    var stroke = Math.max(0.4, 3 / k);
-    var i, r, d, raioTela, fonteUser, fonteTela, maxTela, visivel, dest;
+    var s = m.s;
+    var ks = k * s || 0.001;
+    var stroke = 2.2 / ks;
+    var i, r, d, raioTela, layout, dest, anelTela, fonteUser, lhUser, j, ts, tp, rArc;
     for (i = 0; i < this.rotulos.length; i++) {
       r = this.rotulos[i];
       d = r.pack.data;
-      raioTela = r.pack.r * k * px;
-      visivel = raioTela >= RAIO_MIN_TELA && !r.el.classList.contains("esmaecido");
+      raioTela = r.pack.r * ks;
+      dest = r.tipo === "fato" && this.destacados.has(d.id);
       if (r.tipo === "area" || r.tipo === "subarea") {
-        if (this.filhosVisiveis(r.pack, k, px, RAIO_MIN_TELA)) visivel = false;
-        fonteUser = Math.max(8, Math.min(r.pack.r * 0.2, 22));
-        r.el.setAttribute("y", r.pack.y - r.pack.r + fonteUser * 1.15);
-        maxTela = Math.max(0, raioTela * 1.6);
-      } else {
-        dest = this.destacados.has(d.id);
-        if (dest && raioTela >= 6) visivel = !r.el.classList.contains("esmaecido");
-        fonteUser = Math.max(7, Math.min(r.pack.r * 0.42, 16));
-        r.el.setAttribute("y", r.pack.y + fonteUser * 0.35);
-        maxTela = Math.max(0, raioTela * 1.7);
-      }
-      fonteTela = fonteUser * k * px;
-      r.el.setAttribute("font-size", fonteUser);
-      r.el.setAttribute("stroke-width", stroke);
-      if (visivel) {
+        anelTela = anelUser(r.pack) * ks;
+        layout = layoutGrupo(r.nome, raioTela, anelTela, r.tipo);
+        if (!layout) {
+          r.el.style.display = "none";
+          limparFilhos(r.el);
+          if (r.arco) r.arco.style.display = "none";
+          continue;
+        }
+        fonteUser = layout.fs / ks;
+        r.el.setAttribute("font-size", fonteUser);
+        r.el.setAttribute("stroke-width", stroke);
+        r.el.setAttribute("font-weight", "600");
         r.el.style.display = "";
-        r.el.textContent = encurtarRotulo(r.nome, maxTela, fonteTela);
+        limparFilhos(r.el);
+        if (layout.curvo && r.arco && r.arcoId) {
+          rArc = Math.max(4, r.pack.r - Math.max(anelUser(r.pack) * 0.4, fonteUser * 0.65));
+          r.arco.setAttribute("d", arcoTopo(r.pack.x, r.pack.y, rArc, layout.abertura || 2.4));
+          r.arco.style.display = "";
+          r.el.removeAttribute("x");
+          r.el.removeAttribute("y");
+          tp = document.createElementNS(NS, "textPath");
+          tp.setAttribute("href", "#" + r.arcoId);
+          tp.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "#" + r.arcoId);
+          tp.setAttribute("startOffset", "50%");
+          tp.setAttribute("text-anchor", "middle");
+          tp.setAttribute("dy", String(fonteUser * 0.4));
+          tp.textContent = layout.texto;
+          r.el.appendChild(tp);
+        } else {
+          if (r.arco) r.arco.style.display = "none";
+          r.el.setAttribute("dominant-baseline", "middle");
+          if (layout.linhas && layout.linhas.length) {
+            lhUser = layout.lh / ks;
+            r.el.setAttribute("x", r.pack.x);
+            r.el.setAttribute("y", r.pack.y + layout.dys[0] / ks);
+            for (j = 0; j < layout.linhas.length; j++) {
+              ts = document.createElementNS(NS, "tspan");
+              ts.setAttribute("x", r.pack.x);
+              ts.setAttribute("dy", j === 0 ? 0 : lhUser);
+              ts.textContent = layout.linhas[j];
+              r.el.appendChild(ts);
+            }
+          } else {
+            r.el.setAttribute("x", r.pack.x);
+            r.el.setAttribute("y", r.pack.y + layout.dy / ks);
+            r.el.textContent = layout.texto;
+          }
+        }
       } else {
-        r.el.style.display = "none";
-        r.el.textContent = "";
+        if (!dest && r.el.classList.contains("esmaecido")) {
+          r.el.style.display = "none";
+          limparFilhos(r.el);
+          continue;
+        }
+        layout = layoutFato(r.nome, raioTela);
+        if (!layout) {
+          r.el.style.display = "none";
+          limparFilhos(r.el);
+          continue;
+        }
+        fonteUser = layout.fs / ks;
+        lhUser = layout.lh / ks;
+        r.el.setAttribute("font-size", fonteUser);
+        r.el.setAttribute("stroke-width", stroke);
+        r.el.setAttribute("dominant-baseline", "middle");
+        r.el.setAttribute("x", r.pack.x);
+        r.el.setAttribute("y", r.pack.y + layout.dys[0] / ks);
+        r.el.style.display = "";
+        limparFilhos(r.el);
+        for (j = 0; j < layout.linhas.length; j++) {
+          ts = document.createElementNS(NS, "tspan");
+          ts.setAttribute("x", r.pack.x);
+          ts.setAttribute("dy", j === 0 ? 0 : lhUser);
+          ts.textContent = layout.linhas[j];
+          r.el.appendChild(ts);
+        }
       }
     }
   };
@@ -995,6 +1424,7 @@ __D3_HIERARCHY__
       criar("div", { className: "k" }, "como ler"),
       criar("p", null, "Círculo grande é área, médio é subárea, ponto é fato. Linha cheia é herança (uses); pontilhada é link. Toque num fato: a cor de seleção é dele, uma cor é de quem herda ou aponta, outra é de quem herda dele ou aponta pra ele.")
     );
+    this.pedirAjuste();
   };
 
   Mapa.prototype.iconeEstado = function (classe) {
@@ -1037,6 +1467,7 @@ __D3_HIERARCHY__
     }
     this.painel.hidden = false;
     this.painel.replaceChildren.apply(this.painel, filhos);
+    this.pedirAjuste();
   };
 
   Mapa.prototype.acoesDoFato = function (no) {
