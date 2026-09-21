@@ -22,6 +22,10 @@ class Lentes:
     def nomes(self):
         return sorted(self._mapa)
 
+    def cruas(self):
+        """nome -> escopos sem validar pasta; só o que é lista entra (o mapa mostra, não recusa)."""
+        return {n: [str(a) for a in v] for n, v in self._mapa.items() if isinstance(v, list)}
+
     def escopos(self, lente):
         if lente not in self._mapa:
             disponiveis = ", ".join(self.nomes())

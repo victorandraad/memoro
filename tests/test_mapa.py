@@ -142,7 +142,7 @@ class TestePaleta(unittest.TestCase):
         grupos.append(["casa", "estudo", "hobby", "trabalho", "saude-do-servidor"])
         for areas in grupos:
             for area, matiz in Paleta(areas).matizes().items():
-                self.assertTrue(55 < matiz < 345, "%s caiu em %d" % (area, matiz))
+                self.assertTrue(70 <= matiz <= 335, "%s caiu em %d (margem de 15 graus das faixas de estado)" % (area, matiz))
 
     def test_matiz_da_area_vai_pro_json(self):
         dados = json.loads(gerar(*cenario())[0])

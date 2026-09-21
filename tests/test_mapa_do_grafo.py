@@ -81,6 +81,14 @@ class TesteComandoNaCli(ComAcervo):
         dados = json.loads((self.raiz / ".memoro" / "mapa" / "data.json").read_text(encoding="utf-8"))
         self.assertEqual(dados["titulo"], "Meu acervo")
 
+    def test_lente_torta_nao_derruba_o_mapa(self):
+        (self.raiz / "lentes.json").write_text(json.dumps({"boa": ["casa"], "numero": 7, "sem-pasta": ["nao-existe"]}),
+                                               encoding="utf-8")
+        codigo, _, erro = self.cli("mapa")
+        self.assertEqual((codigo, erro), (0, ""))
+        dados = json.loads((self.raiz / ".memoro" / "mapa" / "data.json").read_text(encoding="utf-8"))
+        self.assertEqual(dados["lentes"], {"boa": ["casa"], "sem-pasta": ["nao-existe"]})
+
     def test_pasta_de_saida_dentro_da_raiz_nao_vira_fato(self):
         self.cli("mapa")
         self.assertEqual(len(RepositorioDeFatos(self.raiz).todos()), 5)

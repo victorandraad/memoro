@@ -326,7 +326,7 @@ class ComandoDoMapa(Comando):
             return GeradorDeMapa(
                 adaptador.nos(),
                 adaptador.arestas(),
-                dict(lentes._mapa),
+                lentes.cruas(),
                 ConfigDoMapa(titulo=titulo, raiz=str(raiz)),
             )
 
