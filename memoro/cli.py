@@ -11,6 +11,8 @@ from dataclasses import asdict
 
 from memoro.diario import DiarioDeEventos
 from memoro.dominio import IdInvalido
+from memoro.grafo import GrafoDeFatos
+from memoro.lentes import ErroDeLente, Lentes, Recall
 from memoro.porta import PortaDeEscrita, Recusa
 from memoro.repositorio import ErroDeRepositorio, RepositorioDeFatos
 
@@ -141,6 +143,76 @@ class ComandoLs(Comando):
         return 0
 
 
+class ComandoRecall(Comando):
+    nome = "recall"
+
+    def configurar(self, subparser):
+        subparser.add_argument("--lens", default=None)
+        subparser.add_argument("--scope", default=None)
+        subparser.add_argument("--saltos", type=int, default=1)
+
+    def executar(self, args):
+        repo = RepositorioDeFatos(self._cli.raiz)
+        lentes = Lentes(self._cli.raiz / "lentes.json", repo.areas())
+        escopos = None
+        if args.lens is not None:
+            escopos = list(lentes.escopos(args.lens))
+        if args.scope:
+            extra = [s.strip() for s in args.scope.split(",") if s.strip()]
+            escopos = (escopos or []) + extra
+        fatos = repo.todos()
+        resultado = Recall(fatos, GrafoDeFatos(fatos), teto=self._teto()).por_escopos(
+            escopos, saltos=args.saltos,
+        )
+        if args.json:
+            json.dump(
+                {
+                    "itens": [
+                        {
+                            "id": str(item.fato.id),
+                            "nome": item.fato.nome,
+                            "area": item.fato.area,
+                            "descricao": item.fato.descricao,
+                            "motivo": item.motivo,
+                        }
+                        for item in resultado.itens
+                    ],
+                    "cortados": resultado.cortados,
+                },
+                self._cli.saida,
+                ensure_ascii=False,
+            )
+            self._cli.saida.write("\n")
+            return 0
+        rotulo = args.lens or args.scope or "tudo"
+        n = len(resultado.itens)
+        if resultado.cortados:
+            cabeca = "# recall: %s (%d fatos, %d cortados pelo teto)" % (
+                rotulo, n, resultado.cortados,
+            )
+        else:
+            cabeca = "# recall: %s (%d fatos)" % (rotulo, n)
+        self._cli.saida.write("%s\n" % cabeca)
+        for item in resultado.itens:
+            linha = "- %s: %s" % (item.fato.id, item.fato.descricao)
+            if item.motivo != "escopo":
+                linha += " (%s)" % item.motivo
+            self._cli.saida.write("%s\n" % linha)
+        return 0
+
+    def _teto(self):
+        bruto = self._cli.ambiente.get("MEMORO_RECALL_CAP")
+        if not bruto:
+            return None
+        try:
+            n = int(bruto)
+        except (TypeError, ValueError):
+            return None
+        if n > 0:
+            return n
+        return None
+
+
 class ComandoAdd(Comando):
     nome = "add"
 
@@ -252,6 +324,7 @@ class Cli:
         self.ambiente = ambiente
         self._comandos = (
             ComandoInit(self), ComandoShow(self), ComandoLs(self),
+            ComandoRecall(self),
             ComandoAdd(self), ComandoUpdate(self), ComandoRm(self),
             ComandoPurga(self), ComandoLog(self),
         )
@@ -293,6 +366,9 @@ class Cli:
                 json.dump({"ok": False, "motivo": str(exc)}, self.saida, ensure_ascii=False)
                 self.saida.write("\n")
             return 1
+        except ErroDeLente as exc:
+            self.erro.write("%s\n" % exc)
+            return 2
         except (ErroDeRepositorio, IdInvalido) as exc:
             self.erro.write("%s\n" % exc)
             return 1
