@@ -174,13 +174,24 @@ class RepositorioDeFatos:
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as arq:
                 arq.write(texto)
+                arq.flush()
+                os.fsync(arq.fileno())
             os.replace(tmp, str(destino))
+            self._sincronizar_pasta(destino.parent)
         except Exception:
             try:
                 os.unlink(tmp)
             except OSError:
                 pass
             raise
+
+    def _sincronizar_pasta(self, pasta):
+        """O rename só é durável depois do fsync da pasta que o contém."""
+        fd = os.open(str(pasta), os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
 
     def _criar_se_falta(self, caminho, conteudo):
         if not caminho.exists():

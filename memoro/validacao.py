@@ -37,7 +37,7 @@ class RegraDeSegredo(Regra):
     PADROES = {
         "github-token": re.compile(
             r"\b(?:gho|ghp|ghu|ghs|ghr)_[A-Za-z0-9]{36,}\b|github_pat_[A-Za-z0-9_]{22,}"),
-        "aws-access-key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+        "aws-access-key": re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"),
         "chave-sk": re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
         "slack-token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b"),
         "private-key-block": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -47,14 +47,21 @@ class RegraDeSegredo(Regra):
     def avaliar(self, pedido):
         if pedido.op not in ("add", "update"):
             return []
-        texto = "%s\n%s" % (pedido.fato.descricao, pedido.fato.corpo)
+        # uses e scope também viram arquivo e motivo de recusa no diário: passam pela mesma peneira
+        campos = (
+            ("descrição", pedido.fato.descricao),
+            ("uses", "\n".join(pedido.fato.uses)),
+            ("scope", "\n".join(pedido.fato.scope)),
+            ("corpo", pedido.fato.corpo),
+        )
         achados = []
-        for n, linha in enumerate(texto.splitlines(), 1):
-            if "pragma: allow-secret" in linha:
-                continue
-            for tipo, padrao in self.PADROES.items():
-                if padrao.search(linha):
-                    achados.append(Achado(True, "segredo do tipo %s na linha %d" % (tipo, n)))
+        for campo, texto in campos:
+            for n, linha in enumerate(texto.splitlines(), 1):
+                if "pragma: allow-secret" in linha:
+                    continue
+                for tipo, padrao in self.PADROES.items():
+                    if padrao.search(linha):
+                        achados.append(Achado(True, "segredo do tipo %s em %s, linha %d" % (tipo, campo, n)))
         return achados
 
 
@@ -175,7 +182,12 @@ class Validador:
     def avaliar(self, pedido):
         achados = []
         for regra in self.regras:
-            achados.extend(regra.avaliar(pedido))
+            novos = regra.avaliar(pedido)
+            achados.extend(novos)
+            # segredo acusado: para aqui, porque as regras seguintes citam a entrada na mensagem
+            # e a mensagem vai pro diário
+            if isinstance(regra, RegraDeSegredo) and any(a.recusa for a in novos):
+                break
         return achados
 
     @classmethod

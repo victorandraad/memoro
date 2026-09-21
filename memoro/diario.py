@@ -34,7 +34,11 @@ class DiarioDeEventos:
                         blob = b"\n" + blob
                 finally:
                     os.close(leitor)
-            os.write(fd, blob)
+            # os.write pode gravar só um pedaço: insiste até o registro inteiro sair
+            resto = memoryview(blob)
+            while resto:
+                resto = resto[os.write(fd, resto):]
+            os.fsync(fd)
         finally:
             os.close(fd)
 
