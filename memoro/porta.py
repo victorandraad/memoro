@@ -124,13 +124,13 @@ class PortaDeEscrita:
             relogio,
         )
 
-    def add(self, area, nome, descricao, corpo, uses=(), scope=()):
+    def add(self, area, nome, descricao, corpo, uses=(), scope=(), novo_mesmo_assim=False):
         uses, scope = tuple(uses), tuple(scope)
         return self._executar(
             "add",
             "%s/%s" % (area, nome),
             area,
-            lambda: self._add(area, nome, descricao, corpo, uses, scope),
+            lambda: self._add(area, nome, descricao, corpo, uses, scope, novo_mesmo_assim),
         )
 
     def update(self, ref, descricao=None, corpo=None, anexo=None, uses=None, scope=None):
@@ -160,10 +160,10 @@ class PortaDeEscrita:
                 self._registrar(op, ident, area, "", False, str(recusa), "")
                 raise recusa from exc
 
-    def _add(self, area, nome, descricao, corpo, uses, scope):
+    def _add(self, area, nome, descricao, corpo, uses, scope, novo_mesmo_assim=False):
         ident = IdDeFato(area, nome)
         fato = Fato(ident, descricao, corpo, uses=uses, scope=scope)
-        avisos = self._validar("add", ident, fato, "")
+        avisos = self._validar("add", ident, fato, "", novo_mesmo_assim=novo_mesmo_assim)
         caminho = self._repositorio.gravar(fato)
         return self._fechar("add", ident, caminho, [caminho], avisos)
 
@@ -201,7 +201,7 @@ class PortaDeEscrita:
             self._registrar("purga", ident, area, "purga", True, aviso or "", "")
         return removidos
 
-    def _validar(self, op, ident, fato, motivo):
+    def _validar(self, op, ident, fato, motivo, novo_mesmo_assim=False):
         pedido = Pedido(
             op=op,
             id=ident,
@@ -209,6 +209,7 @@ class PortaDeEscrita:
             motivo=motivo,
             existentes=tuple(self._repositorio.todos()),
             areas=tuple(self._repositorio.areas()),
+            novo_mesmo_assim=novo_mesmo_assim,
         )
         achados = self._validador.avaliar(pedido)
         recusas = [a.mensagem for a in achados if a.recusa]

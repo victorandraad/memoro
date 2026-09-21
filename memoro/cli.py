@@ -150,11 +150,13 @@ class ComandoAdd(Comando):
         subparser.add_argument("--desc", required=True)
         subparser.add_argument("--uses", default="")
         subparser.add_argument("--scope", default="")
+        subparser.add_argument("--novo-mesmo-assim", action="store_true")
 
     def executar(self, args):
         corpo = self._ler(so_se_nao_tty=True)
         r = self._porta().add(
             args.area, args.nome, args.desc, corpo, uses=_csv(args.uses), scope=_csv(args.scope),
+            novo_mesmo_assim=args.novo_mesmo_assim,
         )
         return self._emitir(r, args)
 

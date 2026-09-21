@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import difflib
 import re
+import unicodedata
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
+from memoro.dominio import Relacao
+from memoro.grafo import GrafoDeFatos
 
 
 @dataclass(frozen=True)
@@ -20,6 +24,7 @@ class Pedido:
     motivo: str = ""
     existentes: tuple = ()
     areas: tuple = ()
+    novo_mesmo_assim: bool = False
 
 
 class Regra(ABC):
@@ -99,6 +104,68 @@ class RegraDeMotivoNaRemocao(Regra):
         return [Achado(True, "rm exige motivo")]
 
 
+class RegraDeReferencias(Regra):
+    def avaliar(self, pedido):
+        if pedido.op not in ("add", "update"):
+            return []
+        fatos = [f for f in pedido.existentes if str(f.id) != str(pedido.id)]
+        fatos.append(pedido.fato)
+        grafo = GrafoDeFatos(fatos)
+        ident = str(pedido.id)
+        achados = []
+        for pendente in grafo.pendentes_de(ident):
+            if pendente.tipo != "uses":
+                continue
+            if not Relacao.de_texto(pendente.alvo).conhecida:
+                continue
+            achados.append(Achado(True, "uses aponta pro vazio: %s" % pendente.alvo))
+        for ambiguo in grafo.ambiguos_de(ident):
+            achados.append(Achado(False, ambiguo.mensagem))
+        return achados
+
+
+class RegraDeQuaseDuplicata(Regra):
+    # ponytail: O(n) por area, comparacao de caracteres, nao de sentido; serie (fato-0, fato-1) nao conta; upgrade = embedding
+    CORTE_NOME = 0.8
+    CORTE_DESCRICAO = 0.8
+
+    def avaliar(self, pedido):
+        if pedido.op != "add" or pedido.novo_mesmo_assim:
+            return []
+        nome = pedido.fato.nome
+        descricao = self._normalizar(pedido.fato.descricao)
+        achados = []
+        for existente in pedido.existentes:
+            if existente.area != pedido.fato.area:
+                continue
+            if self._parecido(nome, existente.nome, self.CORTE_NOME):
+                achados.append(self._recusa(existente))
+                continue
+            if self._parecido(descricao, self._normalizar(existente.descricao), self.CORTE_DESCRICAO):
+                achados.append(self._recusa(existente))
+        return achados
+
+    def _parecido(self, a, b, corte):
+        if a == b:
+            return True
+        if self._so_digito_muda(a, b):
+            return False
+        return difflib.SequenceMatcher(None, a, b).ratio() >= corte
+
+    def _so_digito_muda(self, a, b):
+        return "".join(c for c in a if not c.isdigit()) == "".join(c for c in b if not c.isdigit())
+
+    def _recusa(self, existente):
+        return Achado(
+            True,
+            "parecido com %s: use update ou passe --novo-mesmo-assim" % existente.id,
+        )
+
+    def _normalizar(self, texto):
+        texto = unicodedata.normalize("NFD", texto.lower())
+        return "".join(c for c in texto if unicodedata.category(c) != "Mn")
+
+
 class Validador:
     def __init__(self, regras):
         self.regras = tuple(regras)
@@ -117,4 +184,6 @@ class Validador:
             RegraDeAreaExistente(),
             RegraDeRelacaoConhecida(),
             RegraDeMotivoNaRemocao(),
+            RegraDeReferencias(),
+            RegraDeQuaseDuplicata(),
         ))
