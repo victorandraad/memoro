@@ -76,6 +76,11 @@ class TestQuaseDuplicata(ComPorta):
         self.porta.add("casa", "conta-da-luz", "boleto da energia", "c\n", novo_mesmo_assim=True)
         self.porta.update("casa/conta-da-luz", descricao="vence todo dia 10, débito automático")
 
+    def test_descricao_vazia_nao_e_parecida_com_descricao_vazia(self):
+        self.porta.add("hobby", "violao", "", "c\n")
+        self.porta.add("hobby", "pescaria", "", "c\n")
+        self.porta.add("hobby", "xadrez", "  ", "c\n")
+
     def test_flag_na_cli(self):
         self.assertEqual(self.cli("add", "casa", "conta-da-luz", "--desc", "x", entrada="c")[0], 1)
         self.assertEqual(self.cli("add", "casa", "conta-da-luz", "--desc", "x", "--novo-mesmo-assim", entrada="c")[0], 0)

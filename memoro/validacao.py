@@ -141,7 +141,9 @@ class RegraDeQuaseDuplicata(Regra):
             if self._parecido(nome, existente.nome, self.CORTE_NOME):
                 achados.append(self._recusa(existente))
                 continue
-            if self._parecido(descricao, self._normalizar(existente.descricao), self.CORTE_DESCRICAO):
+            outra = self._normalizar(existente.descricao).strip()
+            # descrição vazia não diz nada: duas vazias não são o mesmo fato
+            if descricao.strip() and outra and self._parecido(descricao, outra, self.CORTE_DESCRICAO):
                 achados.append(self._recusa(existente))
         return achados
 
