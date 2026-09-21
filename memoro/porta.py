@@ -10,6 +10,7 @@ from pathlib import Path
 
 from memoro.diario import DiarioDeEventos
 from memoro.dominio import Evento, Fato, IdDeFato, IdInvalido
+from memoro.formato import LeitorDeFrontmatter, problemas_do_frontmatter
 from memoro.repositorio import FatoNaoEncontrado, ReferenciaAmbigua, RepositorioDeFatos
 from memoro.validacao import Pedido, Validador
 
@@ -144,6 +145,9 @@ class PortaDeEscrita:
     def rm(self, ref, motivo):
         return self._executar("rm", ref, "", lambda: self._rm(ref, motivo))
 
+    def adotar(self, ref, motivo):
+        return self._executar("adocao", ref, "", lambda: self._adotar(ref, motivo))
+
     def purga(self, dias):
         with self._tranca:
             return self._purga(dias)
@@ -192,6 +196,44 @@ class PortaDeEscrita:
             atual.id, motivo, self._usuario, self._relogio().date(),
         )
         return self._fechar("rm", atual.id, destino, [origem, destino], avisos, motivo)
+
+    def _adotar(self, ref, motivo):
+        if not (motivo or "").strip():
+            raise Recusa("adoção exige motivo")
+        ident, caminho = self._resolver_para_adotar(ref)
+        try:
+            texto = caminho.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            raise Recusa("frontmatter inválido")
+        if problemas_do_frontmatter(texto, ident.area, ident.nome):
+            raise Recusa("frontmatter inválido")
+        campos, corpo = LeitorDeFrontmatter().ler(texto)
+        fato = Fato(
+            ident,
+            campos.get("description", ""),
+            corpo,
+            uses=tuple(campos.get("uses") or ()),
+            scope=tuple(campos.get("scope") or ()),
+        )
+        avisos = self._validar("adocao", ident, fato, motivo)
+        return self._fechar("adocao", ident, caminho, [caminho], avisos, motivo)
+
+    def _resolver_para_adotar(self, ref):
+        try:
+            ident = IdDeFato.de_texto(ref)
+        except IdInvalido:
+            ident = None
+        if ident is not None:
+            caminho = self._repositorio.caminho_de(ident)
+            if caminho.is_file():
+                return ident, caminho
+        try:
+            atual = self._repositorio.achar(ref)
+            return atual.id, self._repositorio.caminho_de(atual.id)
+        except (FatoNaoEncontrado, ReferenciaAmbigua):
+            if ident is None:
+                raise Recusa("frontmatter inválido")
+            raise
 
     def _purga(self, dias):
         removidos = self._repositorio.purgar(dias, self._relogio().date())

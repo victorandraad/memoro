@@ -62,6 +62,22 @@ class DiarioDeEventos:
             eventos.append(evento)
         return eventos
 
+    def linhas_corrompidas(self):
+        """Pares (número, texto) das linhas não vazias que não são um evento válido."""
+        if not self._caminho.is_file():
+            return []
+        try:
+            texto = self._caminho.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return []
+        corrompidas = []
+        for numero, linha in enumerate(texto.splitlines(), 1):
+            if not linha.strip():
+                continue
+            if self._evento_de(linha) is None:
+                corrompidas.append((numero, linha))
+        return corrompidas
+
     def _evento_de(self, linha):
         try:
             dados = json.loads(linha)

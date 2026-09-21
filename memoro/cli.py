@@ -12,6 +12,7 @@ from dataclasses import asdict
 from memoro.adaptador_do_mapa import AdaptadorDoMapa
 from memoro.diario import DiarioDeEventos
 from memoro.dominio import IdInvalido
+from memoro.doutor import Doutor
 from memoro.grafo import GrafoDeFatos
 from memoro.lentes import ErroDeLente, Lentes, Recall
 from memoro.mapa import ComandoMapa, ConfigDoMapa, GeradorDeMapa
@@ -81,12 +82,26 @@ class ComandoInit(Comando):
     def executar(self, args):
         raiz = self._cli.raiz
         RepositorioDeFatos(raiz).inicializar()
+        self._adotar_exemplos()
         if args.json:
             json.dump({"raiz": str(raiz)}, self._cli.saida, ensure_ascii=False)
             self._cli.saida.write("\n")
         else:
             self._cli.saida.write("%s\n" % raiz)
         return 0
+
+    def _adotar_exemplos(self):
+        porta = self._porta()
+        alvos = {"casa/exemplo", "trabalho/exemplo"}
+        for achado in Doutor(self._cli.raiz).examinar():
+            if achado.id not in alvos:
+                continue
+            if achado.tipo not in ("sem-evento", "alterado-fora-da-porta"):
+                continue
+            try:
+                porta.adotar(achado.id, "init")
+            except Recusa:
+                continue
 
 
 class ComandoShow(Comando):
@@ -318,6 +333,61 @@ class ComandoDoMapa(Comando):
         return ComandoMapa(fabrica, raiz).executar(args)
 
 
+class ComandoDoutor(Comando):
+    nome = "doutor"
+
+    def configurar(self, subparser):
+        subparser.add_argument("--adotar", default=None)
+        subparser.add_argument("--motivo", default=None)
+
+    def executar(self, args):
+        if args.adotar is not None:
+            if not args.motivo:
+                self._cli.erro.write("doutor --adotar exige --motivo\n")
+                return 1
+            return self._emitir(self._porta().adotar(args.adotar, args.motivo), args)
+        achados = Doutor(self._cli.raiz).examinar()
+        payload = {
+            "limpo": not achados,
+            "achados": [{"tipo": a.tipo, "id": a.id, "detalhe": a.detalhe} for a in achados],
+        }
+        if args.json:
+            json.dump(payload, self._cli.saida, ensure_ascii=False)
+            self._cli.saida.write("\n")
+        elif not achados:
+            self._cli.saida.write("limpo\n")
+        else:
+            for achado in achados:
+                self._cli.saida.write("%s %s: %s\n" % (achado.tipo, achado.id, achado.detalhe))
+        return 0 if not achados else 1
+
+
+class ComandoAdotarTudo(Comando):
+    nome = "adotar-tudo"
+
+    def configurar(self, subparser):
+        subparser.add_argument("--motivo", required=True)
+
+    def executar(self, args):
+        porta = self._porta()
+        tipos = ("sem-evento", "alterado-fora-da-porta", "frontmatter-invalido")
+        vistos = set()
+        adotados = 0
+        falhou = False
+        for achado in Doutor(self._cli.raiz).examinar():
+            if achado.tipo not in tipos or achado.id in vistos:
+                continue
+            vistos.add(achado.id)
+            try:
+                porta.adotar(achado.id, args.motivo)
+                adotados += 1
+            except Recusa as exc:
+                falhou = True
+                self._cli.erro.write("%s: %s\n" % (achado.id, exc))
+        self._cli.saida.write("%d adotados\n" % adotados)
+        return 1 if falhou else 0
+
+
 class ComandoLog(Comando):
     nome = "log"
 
@@ -354,6 +424,7 @@ class Cli:
             ComandoRecall(self),
             ComandoAdd(self), ComandoUpdate(self), ComandoRm(self),
             ComandoPurga(self), ComandoLog(self), ComandoDoMapa(self),
+            ComandoDoutor(self), ComandoAdotarTudo(self),
         )
 
     @property

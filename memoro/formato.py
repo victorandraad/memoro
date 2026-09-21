@@ -33,6 +33,19 @@ class LeitorDeFrontmatter:
         return campos, texto[achado.end():].lstrip("\n")
 
 
+def problemas_do_frontmatter(texto, area, nome):
+    """Inconsistências entre o bloco --- e o caminho do arquivo; vazio se alinhado."""
+    if _FRONT.match(texto) is None:
+        return ["sem bloco de frontmatter"]
+    campos, _ = LeitorDeFrontmatter().ler(texto)
+    problemas = []
+    if campos.get("name") != nome:
+        problemas.append("name diferente do arquivo")
+    if campos.get("area") != area:
+        problemas.append("area diferente da pasta")
+    return problemas
+
+
 class EscritorDeFrontmatter:
     def escrever(self, fato, extras=None):
         linhas = [

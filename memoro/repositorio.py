@@ -149,14 +149,8 @@ class RepositorioDeFatos:
             + "\n",
         )
         self._criar_se_falta(self._raiz / "eventos.jsonl", "")
-        exemplos = (
-            ("casa", "exemplo", "fato de exemplo da área casa"),
-            ("trabalho", "exemplo", "fato de exemplo da área trabalho"),
-        )
-        for area, nome, desc in exemplos:
-            ident = IdDeFato(area, nome)
-            if not self.caminho_de(ident).exists():
-                self.gravar(Fato(ident, desc, "corpo de exemplo\n"))
+        for area in ("casa", "trabalho"):
+            (self._raiz / "areas" / area).mkdir(exist_ok=True)
 
     def _ler(self, ident, caminho):
         campos, corpo = self._leitor.ler(caminho.read_text(encoding="utf-8", errors="replace"))

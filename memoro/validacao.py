@@ -45,7 +45,7 @@ class RegraDeSegredo(Regra):
     }
 
     def avaliar(self, pedido):
-        if pedido.op not in ("add", "update"):
+        if pedido.op not in ("add", "update", "adocao"):
             return []
         # uses e scope também viram arquivo e motivo de recusa no diário: passam pela mesma peneira
         campos = (
@@ -113,7 +113,7 @@ class RegraDeMotivoNaRemocao(Regra):
 
 class RegraDeReferencias(Regra):
     def avaliar(self, pedido):
-        if pedido.op not in ("add", "update"):
+        if pedido.op not in ("add", "update", "adocao"):
             return []
         fatos = [f for f in pedido.existentes if str(f.id) != str(pedido.id)]
         fatos.append(pedido.fato)
