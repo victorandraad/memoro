@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITULO__</title>
+<style>
+:root {
+  --bg: #edf0f2;
+  --ink: #1c2630;
+  --mute: #5e6b76;
+  --line: #c9d1d8;
+  --panel: #ffffff;
+  --sel: #0e7c86;
+  --herda-de: #a8326b;
+  --herdado-por: #2f6f3e;
+  --pendente: #c0392b;
+  --ambiguo: #c08a2e;
+  --aresta: #a8326b;
+  --foco: #0e7c86;
+  --gutter: 16px;
+  --esmaece: 0.14;
+  --orfao-alfa: 0.42;
+  --area-alfa: 0.12;
+  --sub-alfa: 0.2;
+  --fato-s: 55%;
+  --fato-l: 48%;
+  --amostra: 210;
+  --sombra: 0 1px 8px hsl(210 20% 20% / 0.12);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #10161c;
+    --ink: #e3e8ec;
+    --mute: #8c99a4;
+    --line: #2b3640;
+    --panel: #18212a;
+    --sel: #4fc3cc;
+    --herda-de: #e0689f;
+    --herdado-por: #6fbf7a;
+    --pendente: #e07070;
+    --ambiguo: #e0b05a;
+    --aresta: #e0689f;
+    --foco: #4fc3cc;
+    --fato-s: 60%;
+    --fato-l: 62%;
+    --sombra: 0 1px 10px hsl(210 30% 4% / 0.45);
+    color-scheme: dark;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow-x: hidden; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding: 12px var(--gutter);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; }
+h1, #painel h2 { font: 600 22px/1.15 Georgia, serif; margin: 0; }
+#painel h2 { font-size: 18px; word-break: break-word; }
+#saude { color: var(--mute); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+#saude button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+#saude button[aria-pressed="true"] { color: var(--sel); font-weight: 600; }
+#busca {
+  margin-left: auto;
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 4px;
+  min-width: 0;
+  width: 220px;
+}
+#lentes { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+#lentes button, .zoom button, #painel .acoes a, #painel .acoes button, .liga {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--mute);
+  padding: 3px 10px;
+  border-radius: 99px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#lentes button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+#legenda { color: var(--mute); font-size: 13px; }
+#legenda summary { cursor: pointer; }
+.itens-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.am {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.am-fato { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); }
+.am-area {
+  background: hsl(var(--amostra) var(--fato-s) var(--fato-l) / var(--area-alfa));
+  box-shadow: inset 0 0 0 1px hsl(var(--amostra) var(--fato-s) var(--fato-l));
+}
+.am-sub {
+  background: hsl(var(--amostra) var(--fato-s) var(--fato-l) / var(--sub-alfa));
+  box-shadow: inset 0 0 0 1px hsl(var(--amostra) var(--fato-s) var(--fato-l));
+}
+.am-uses, .am-link {
+  width: 22px;
+  height: 0;
+  border-radius: 0;
+  border-top: 2px solid var(--aresta);
+}
+.am-link { border-top-style: dashed; }
+.am-sel { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--sel); }
+.am-herda { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--herda-de); }
+.am-herdado { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--herdado-por); }
+.am-pendente { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--pendente); }
+.am-ambiguo { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--ambiguo); border-radius: 50%; }
+.am-orfao { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); opacity: var(--orfao-alfa); }
+main { flex: 1; min-height: 0; position: relative; }
+svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  user-select: none;
+}
+.zoom {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+.zoom button { background: var(--panel); color: var(--ink); border-radius: 4px; }
+#painel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: min(320px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  box-shadow: var(--sombra);
+  max-height: 100%;
+  overflow: auto;
+  z-index: 3;
+}
+#painel .k { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); margin: 10px 0 4px; }
+#painel .k:first-child { margin-top: 0; }
+#painel p { margin: 0 0 8px; font-family: Georgia, serif; font-size: 15px; }
+#painel .caminho { font: 12px/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
+#painel .acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+#painel .acoes a, #painel .acoes button { color: var(--ink); text-decoration: none; border-radius: 4px; }
+#painel ul { margin: 0; padding: 0; list-style: none; }
+#painel li { margin: 0 0 4px; }
+.liga { border-radius: 4px; color: var(--sel); padding: 2px 8px; }
+.mute { color: var(--mute); }
+.txt-pendente { color: var(--pendente); }
+.txt-ambiguo { color: var(--ambiguo); }
+circle, path, text { transition: opacity 0.15s; }
+.fato { fill: hsl(var(--matiz) var(--fato-s) var(--fato-l)); stroke: var(--line); stroke-width: 1; cursor: pointer; }
+.area, .subarea {
+  fill: hsl(var(--matiz) var(--fato-s) var(--fato-l) / var(--area-alfa));
+  stroke: hsl(var(--matiz) var(--fato-s) var(--fato-l));
+  stroke-width: 1;
+  cursor: pointer;
+}
+.subarea { fill: hsl(var(--matiz) var(--fato-s) var(--fato-l) / var(--sub-alfa)); }
+.fato.orfao { fill-opacity: var(--orfao-alfa); }
+.fato.ambiguo { stroke: var(--ambiguo); stroke-dasharray: 4 3; stroke-width: 2; }
+.fato.pendente { stroke: var(--pendente); stroke-dasharray: none; stroke-width: 2; }
+.fato.herda-de, .area.herda-de, .subarea.herda-de { stroke: var(--herda-de); stroke-dasharray: none; stroke-width: 2; }
+.fato.herdado-por, .area.herdado-por, .subarea.herdado-por { stroke: var(--herdado-por); stroke-dasharray: none; stroke-width: 2; }
+.fato.sel, .area.sel, .subarea.sel { stroke: var(--sel); stroke-dasharray: none; stroke-width: 2.5; }
+.esmaecido { opacity: var(--esmaece); }
+.aresta { fill: none; stroke: var(--aresta); stroke-width: 1.2; opacity: 0.45; pointer-events: none; }
+.aresta.link { stroke-width: 0.7; stroke-dasharray: 3 3; }
+.aresta.acesa { opacity: 1; stroke-width: 2.2; }
+.aresta.acesa.link { stroke-width: 1.4; }
+.aresta.esmaecido { opacity: 0.08; }
+.rotulo {
+  fill: var(--ink);
+  text-anchor: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.rotulo.area { text-transform: uppercase; letter-spacing: 0.04em; }
+.rotulo.subarea { fill: var(--mute); font-weight: 500; }
+.rotulo.fato { font-weight: 400; }
+:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
+@media (max-width: 600px) {
+  #busca { width: 100%; margin-left: 0; }
+  #painel {
+    top: auto;
+    bottom: 0;
+    max-height: 60%;
+    overflow: auto;
+    width: 100%;
+  }
+  #painel .acoes { flex-direction: column; }
+  #painel .acoes a, #painel .acoes button { text-align: center; }
+  .zoom { top: auto; bottom: calc(8px + 0px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<header>
+<h1>__TITULO__</h1>
+<div id="saude"></div>
+<input id="busca" type="search" placeholder="buscar fato ( / )" aria-label="buscar fato">
+</header>
+<div id="lentes" role="toolbar" aria-label="lentes"></div>
+<details id="legenda">
+<summary>legenda</summary>
+<ul class="itens-legenda">
+<li><span class="am am-fato"></span>fato</li>
+<li><span class="am am-area"></span>area</li>
+<li><span class="am am-sub"></span>subarea</li>
+<li><span class="am am-uses"></span>heranca uses</li>
+<li><span class="am am-link"></span>link</li>
+<li><span class="am am-sel"></span>selecionado</li>
+<li><span class="am am-herda"></span>herda de</li>
+<li><span class="am am-herdado"></span>herdado por</li>
+<li><span class="am am-pendente"></span>pendente</li>
+<li><span class="am am-ambiguo"></span>ambiguo</li>
+<li><span class="am am-orfao"></span>orfao</li>
+</ul>
+</details>
+<main>
+<svg viewBox="0 0 1000 1000" role="group" aria-label="mapa da memoria"></svg>
+<div class="zoom">
+<button type="button" id="zoom-mais" aria-label="aproximar">+</button>
+<button type="button" id="zoom-menos" aria-label="afastar">-</button>
+<button type="button" id="centralizar">centralizar</button>
+</div>
+<aside id="painel" aria-live="polite"></aside>
+</main>
+<script>
+__D3_HIERARCHY__
+</script>
+<script id="dados" type="application/json">__DADOS__</script>
+<script>
+(function () {
+  var NS = "http://www.w3.org/2000/svg";
+  var LIMIAR_ARRASTO = 5;
+  var CX = 500;
+  var CY = 500;
+
+  function criar(tag, attrs) {
+    var n = document.createElement(tag);
+    var k;
+    if (attrs) {
+      for (k in attrs) {
+        if (attrs[k] === null || attrs[k] === undefined) continue;
+        if (k === "className") n.className = attrs[k];
+        else n.setAttribute(k, attrs[k]);
+      }
+    }
+    var i;
+    for (i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null) continue;
+      n.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    }
+    return n;
+  }
+
+  function svgEl(tag, attrs) {
+    var n = document.createElementNS(NS, tag);
+    var k;
+    if (attrs) {
+      for (k in attrs) {
+        if (attrs[k] === null || attrs[k] === undefined) continue;
+        n.setAttribute(k, String(attrs[k]));
+      }
+    }
+    return n;
+  }
+
+  function Mapa(dados) {
+    this.dados = dados;
+    this.escala = 1;
+    this.tx = 0;
+    this.ty = 0;
+    this.foco = null;
+    this.lente = null;
+    this.filtroSaude = null;
+    this.svg = document.querySelector("main svg");
+    this.grupo = null;
+    this.busca = document.getElementById("busca");
+    this.painel = document.getElementById("painel");
+    this.saudeEl = document.getElementById("saude");
+    this.lentesEl = document.getElementById("lentes");
+    this.indice = {};
+    this.circulos = [];
+    this.arestasEl = [];
+    this.rotulos = [];
+    this.destacados = new Set();
+    this.ponteiros = new Map();
+    this.arrasto = null;
+    this.pinca = null;
+    this.bloquearClique = false;
+    this.textoJson = document.getElementById("dados").textContent;
+    this.etag = "";
+  }
+
+  Mapa.prototype.iniciar = function () {
+    this.ligarEventos();
+    this.desenhar(this.dados, false);
+    this.iniciarPoll();
+  };
+
+  Mapa.prototype.ligarEventos = function () {
+    var self = this;
+    this.svg.addEventListener("pointerdown", function (e) { self.aoPointerDown(e); });
+    this.svg.addEventListener("pointermove", function (e) { self.aoPointerMove(e); });
+    this.svg.addEventListener("pointerup", function (e) { self.aoPointerUp(e); });
+    this.svg.addEventListener("pointercancel", function (e) { self.aoPointerUp(e); });
+    this.svg.addEventListener("wheel", function (e) {
+      e.preventDefault();
+      var fator = Math.pow(1.0016, -e.deltaY);
+      self.zoomEm(e.clientX, e.clientY, self.escala * fator);
+    }, { passive: false });
+    this.svg.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (self.bloquearClique) {
+        self.bloquearClique = false;
+        e.preventDefault();
+        return;
+      }
+      self.tratarClique(e.target);
+    });
+    document.getElementById("zoom-mais").addEventListener("click", function () {
+      self.zoomCentro(self.escala * 1.25);
+    });
+    document.getElementById("zoom-menos").addEventListener("click", function () {
+      self.zoomCentro(self.escala / 1.25);
+    });
+    document.getElementById("centralizar").addEventListener("click", function () {
+      self.centralizar();
+    });
+    this.busca.addEventListener("input", function () { self.aoBuscar(); });
+    this.painel.addEventListener("click", function (e) { self.aoCliquePainel(e); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        self.limpar();
+        return;
+      }
+      var tag = e.target && e.target.tagName;
+      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+        self.busca.focus();
+      }
+    });
+    window.addEventListener("resize", function () { self.atualizarRotulos(); });
+  };
+
+  Mapa.prototype.desenhar = function (dados, preservar) {
+    var focoId = preservar && this.foco ? this.foco.id : null;
+    var focoTipo = preservar && this.foco ? this.foco.tipo : null;
+    var lente = preservar ? this.lente : null;
+    this.dados = dados;
+    if (lente && !(lente in dados.lentes)) lente = null;
+    this.lente = lente;
+    var self = this;
+    this.indice = {};
+    this.circulos = [];
+    this.arestasEl = [];
+    this.rotulos = [];
+    this.destacados = new Set();
+    this.foco = null;
+
+    while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
+    this.grupo = svgEl("g");
+    this.svg.appendChild(this.grupo);
+    this.aplicarTransform();
+
+    var arvore = this.montarArvore(dados);
+    var hierarquia = d3.hierarchy(arvore, function (d) { return d.filhos; })
+      .sum(function (d) { return d.value || 0; })
+      .sort(function (a, b) { return b.value - a.value; });
+    d3.pack().size([1000, 1000]).padding(function (d) {
+      return d.depth === 0 ? 14 : d.depth === 1 ? 8 : 3;
+    })(hierarquia);
+
+    var nosPack = hierarquia.descendants().slice(1);
+    var i, p, d, circ, txt, path, a, b, mx, my, origem, destino;
+    var porIdPack = {};
+
+    for (i = 0; i < nosPack.length; i++) {
+      p = nosPack[i];
+      d = p.data;
+      circ = svgEl("circle", {
+        cx: p.x,
+        cy: p.y,
+        r: p.r,
+        class: d.tipo,
+        "data-tipo": d.tipo,
+        "data-id": d.id
+      });
+      circ.style.setProperty("--matiz", String(d.matiz));
+      if (d.tipo === "fato") {
+        if (d.orfao) circ.classList.add("orfao");
+        if (d.ambiguos && d.ambiguos.length) circ.classList.add("ambiguo");
+        if (d.pendentes && d.pendentes.length) circ.classList.add("pendente");
+        circ.setAttribute("tabindex", "0");
+        circ.setAttribute("role", "button");
+        circ.setAttribute("aria-label", d.rotulo);
+        circ.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            self.selecionarPorId(d.id);
+          }
+        });
+        porIdPack[d.id] = p;
+        this.indice[d.id] = d;
+      }
+      this.grupo.appendChild(circ);
+      this.circulos.push({ el: circ, pack: p, dado: d });
+    }
+
+    for (i = 0; i < dados.arestas.length; i++) {
+      a = dados.arestas[i];
+      origem = porIdPack[a.origem];
+      destino = porIdPack[a.destino];
+      if (!origem || !destino) continue;
+      mx = (origem.x + destino.x) / 2;
+      my = (origem.y + destino.y) / 2;
+      path = svgEl("path", {
+        class: "aresta " + a.tipo,
+        d: "M" + origem.x + "," + origem.y +
+          " Q" + (mx + (CX - mx) * 0.35) + "," + (my + (CY - my) * 0.35) +
+          " " + destino.x + "," + destino.y
+      });
+      this.grupo.appendChild(path);
+      this.arestasEl.push({ el: path, aresta: a });
+    }
+
+    for (i = 0; i < nosPack.length; i++) {
+      p = nosPack[i];
+      d = p.data;
+      txt = svgEl("text", {
+        class: "rotulo " + d.tipo,
+        x: p.x,
+        y: d.tipo === "area" ? p.y - p.r + 18 : p.y + 3
+      });
+      txt.textContent = d.tipo === "fato" ? d.rotulo : d.nome;
+      this.grupo.appendChild(txt);
+      this.rotulos.push({ el: txt, pack: p, tipo: d.tipo });
+    }
+
+    this.preencherSaude(dados.saude);
+    this.preencherLentes(dados.lentes);
+    this.ajudaPainel();
+
+    if (focoTipo === "fato" && this.indice[focoId]) this.selecionarPorId(focoId);
+    else if (focoId) {
+      for (i = 0; i < this.circulos.length; i++) {
+        if (this.circulos[i].dado.id === focoId && this.circulos[i].dado.tipo === focoTipo) {
+          this.selecionarNo(this.circulos[i].dado);
+          break;
+        }
+      }
+    } else if (this.busca.value.trim()) {
+      this.aoBuscar();
+    } else {
+      this.aplicarFiltros();
+    }
+    this.atualizarRotulos();
+  };
+
+  Mapa.prototype.montarArvore = function (dados) {
+    var areas = {};
+    var raiz = { nome: "memoria", tipo: "raiz", filhos: [] };
+    var i, a, fato, pai, sub, area;
+    for (i = 0; i < dados.areas.length; i++) {
+      a = dados.areas[i];
+      area = {
+        nome: a.nome,
+        tipo: "area",
+        id: a.nome,
+        area: a.nome,
+        matiz: a.matiz,
+        filhos: [],
+        subs: {}
+      };
+      areas[a.nome] = area;
+      raiz.filhos.push(area);
+    }
+    for (i = 0; i < dados.nos.length; i++) {
+      fato = dados.nos[i];
+      area = areas[fato.area];
+      if (!area) continue;
+      pai = area;
+      if (fato.subarea) {
+        sub = area.subs[fato.subarea];
+        if (!sub) {
+          sub = {
+            nome: fato.subarea,
+            tipo: "subarea",
+            id: fato.area + "/" + fato.subarea,
+            area: fato.area,
+            subarea: fato.subarea,
+            matiz: area.matiz,
+            filhos: []
+          };
+          area.subs[fato.subarea] = sub;
+          area.filhos.push(sub);
+        }
+        pai = sub;
+      }
+      pai.filhos.push({
+        id: fato.id,
+        nome: fato.nome,
+        rotulo: fato.rotulo,
+        descricao: fato.descricao,
+        area: fato.area,
+        subarea: fato.subarea,
+        caminho: fato.caminho,
+        pendentes: fato.pendentes || [],
+        ambiguos: fato.ambiguos || [],
+        orfao: !!fato.orfao,
+        tipo: "fato",
+        matiz: area.matiz,
+        value: 1
+      });
+    }
+    return raiz;
+  };
+
+  Mapa.prototype.aplicarTransform = function () {
+    if (this.grupo) {
+      this.grupo.setAttribute(
+        "transform",
+        "translate(" + this.tx + "," + this.ty + ") scale(" + this.escala + ")"
+      );
+    }
+  };
+
+  Mapa.prototype.pontoSvg = function (clientX, clientY) {
+    var r = this.svg.getBoundingClientRect();
+    var w = r.width || 1;
+    var h = r.height || 1;
+    return {
+      x: (clientX - r.left) / w * 1000,
+      y: (clientY - r.top) / h * 1000
+    };
+  };
+
+  Mapa.prototype.zoomEm = function (clientX, clientY, nova) {
+    var k0 = this.escala;
+    var k1 = Math.min(12, Math.max(0.5, nova));
+    var p = this.pontoSvg(clientX, clientY);
+    var wx = (p.x - this.tx) / k0;
+    var wy = (p.y - this.ty) / k0;
+    this.escala = k1;
+    this.tx = p.x - wx * k1;
+    this.ty = p.y - wy * k1;
+    this.aplicarTransform();
+    this.atualizarRotulos();
+  };
+
+  Mapa.prototype.zoomCentro = function (nova) {
+    var r = this.svg.getBoundingClientRect();
+    this.zoomEm(r.left + r.width / 2, r.top + r.height / 2, nova);
+  };
+
+  Mapa.prototype.centralizar = function () {
+    this.escala = 1;
+    this.tx = 0;
+    this.ty = 0;
+    this.aplicarTransform();
+    this.atualizarRotulos();
+  };
+
+  Mapa.prototype.aoPointerDown = function (e) {
+    if (e.button && e.button !== 0) return;
+    this.svg.setPointerCapture(e.pointerId);
+    this.ponteiros.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.ponteiros.size === 2) {
+      var pts = Array.from(this.ponteiros.values());
+      var mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+      var p = this.pontoSvg(mid.x, mid.y);
+      this.pinca = {
+        dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1,
+        escala: this.escala,
+        wx: (p.x - this.tx) / this.escala,
+        wy: (p.y - this.ty) / this.escala
+      };
+      this.arrasto = null;
+    } else if (this.ponteiros.size === 1) {
+      this.arrasto = {
+        x: e.clientX,
+        y: e.clientY,
+        tx: this.tx,
+        ty: this.ty,
+        moveu: false,
+        alvo: e.target
+      };
+    }
+  };
+
+  Mapa.prototype.aoPointerMove = function (e) {
+    if (!this.ponteiros.has(e.pointerId)) return;
+    this.ponteiros.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.pinca && this.ponteiros.size >= 2) {
+      var pts = Array.from(this.ponteiros.values());
+      var dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+      var mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+      var k1 = Math.min(12, Math.max(0.5, this.pinca.escala * (dist / this.pinca.dist)));
+      var p = this.pontoSvg(mid.x, mid.y);
+      this.escala = k1;
+      this.tx = p.x - this.pinca.wx * k1;
+      this.ty = p.y - this.pinca.wy * k1;
+      this.aplicarTransform();
+      this.atualizarRotulos();
+      return;
+    }
+    if (this.arrasto) {
+      var dx = e.clientX - this.arrasto.x;
+      var dy = e.clientY - this.arrasto.y;
+      if (Math.hypot(dx, dy) > LIMIAR_ARRASTO) this.arrasto.moveu = true;
+      if (this.arrasto.moveu) {
+        var ret = this.svg.getBoundingClientRect();
+        var sx = 1000 / (ret.width || 1);
+        this.tx = this.arrasto.tx + dx * sx;
+        this.ty = this.arrasto.ty + dy * sx;
+        this.aplicarTransform();
+      }
+    }
+  };
+
+  Mapa.prototype.aoPointerUp = function (e) {
+    var moveu = this.arrasto && this.arrasto.moveu;
+    var alvo = this.arrasto && this.arrasto.alvo;
+    var tinhaPinca = !!this.pinca;
+    this.ponteiros.delete(e.pointerId);
+    if (this.ponteiros.size < 2) this.pinca = null;
+    if (this.ponteiros.size === 0) {
+      if (!moveu && !tinhaPinca) this.tratarClique(alvo || e.target);
+      this.bloquearClique = true;
+      this.arrasto = null;
+    }
+    try { this.svg.releasePointerCapture(e.pointerId); } catch (err) {}
+  };
+
+  Mapa.prototype.tratarClique = function (el) {
+    if (!el || !el.getAttribute) {
+      this.limpar();
+      return;
+    }
+    var tipo = el.getAttribute("data-tipo");
+    var id = el.getAttribute("data-id");
+    if (tipo === "fato" && id) this.selecionarPorId(id);
+    else if ((tipo === "area" || tipo === "subarea") && id) {
+      var i, d;
+      for (i = 0; i < this.circulos.length; i++) {
+        d = this.circulos[i].dado;
+        if (d.tipo === tipo && d.id === id) {
+          this.selecionarNo(d);
+          return;
+        }
+      }
+    } else this.limpar();
+  };
+
+  Mapa.prototype.selecionarPorId = function (id) {
+    var no = this.indice[id];
+    if (no) this.selecionarNo(no);
+  };
+
+  Mapa.prototype.selecionarNo = function (no) {
+    this.foco = no;
+    this.mostrarPainel(no);
+    this.aplicarFiltros();
+    this.atualizarRotulos();
+  };
+
+  Mapa.prototype.limpar = function () {
+    this.foco = null;
+    this.filtroSaude = null;
+    this.busca.value = "";
+    this.preencherSaude(this.dados.saude);
+    this.ajudaPainel();
+    this.aplicarFiltros();
+    this.atualizarRotulos();
+  };
+
+  Mapa.prototype.naLente = function (no) {
+    if (!this.lente) return true;
+    var escopos = this.dados.lentes[this.lente] || [];
+    var i, escopo, chaveSub;
+    chaveSub = no.subarea ? no.area + "/" + no.subarea : null;
+    for (i = 0; i < escopos.length; i++) {
+      escopo = escopos[i];
+      if (no.tipo === "area") {
+        if (escopo === no.area || escopo.indexOf(no.area + "/") === 0) return true;
+      } else if (no.tipo === "subarea") {
+        if (escopo === no.area || escopo === no.area + "/" + no.nome) return true;
+      } else {
+        if (escopo === no.area) return true;
+        if (chaveSub && escopo === chaveSub) return true;
+      }
+    }
+    return false;
+  };
+
+  Mapa.prototype.casaBusca = function (no, q) {
+    if (!q) return true;
+    if (no.tipo !== "fato") return true;
+    return (no.nome || "").toLowerCase().indexOf(q) !== -1 ||
+      (no.rotulo || "").toLowerCase().indexOf(q) !== -1;
+  };
+
+  Mapa.prototype.vizinhosDoFoco = function () {
+    var herdaDe = new Set();
+    var herdadoPor = new Set();
+    var id = this.foco && this.foco.tipo === "fato" ? this.foco.id : null;
+    var i, a;
+    if (!id) return { herdaDe: herdaDe, herdadoPor: herdadoPor, ids: new Set() };
+    for (i = 0; i < this.dados.arestas.length; i++) {
+      a = this.dados.arestas[i];
+      if (a.origem === id) herdaDe.add(a.destino);
+      else if (a.destino === id) herdadoPor.add(a.origem);
+    }
+    var ids = new Set([id]);
+    herdaDe.forEach(function (x) { ids.add(x); });
+    herdadoPor.forEach(function (x) { ids.add(x); });
+    return { herdaDe: herdaDe, herdadoPor: herdadoPor, ids: ids };
+  };
+
+  Mapa.prototype.aplicarFiltros = function () {
+    var q = this.busca.value.trim().toLowerCase();
+    var viz = this.vizinhosDoFoco();
+    var fatoSel = this.foco && this.foco.tipo === "fato";
+    this.destacados = viz.ids;
+    var i, item, d, el, dim;
+    for (i = 0; i < this.circulos.length; i++) {
+      item = this.circulos[i];
+      d = item.dado;
+      el = item.el;
+      el.classList.remove("sel", "herda-de", "herdado-por", "esmaecido");
+      dim = false;
+      if (!this.naLente(d)) dim = true;
+      if (!this.casaBusca(d, q)) dim = true;
+      if (this.filtroSaude === "pendentes" && d.tipo === "fato" && !(d.pendentes && d.pendentes.length)) dim = true;
+      if (this.filtroSaude === "ambiguos" && d.tipo === "fato" && !(d.ambiguos && d.ambiguos.length)) dim = true;
+      if (fatoSel && d.tipo === "fato" && !viz.ids.has(d.id)) dim = true;
+      if (fatoSel && d.tipo === "fato" && viz.ids.has(d.id)) dim = false;
+      if (this.foco && d === this.foco) {
+        el.classList.add("sel");
+        dim = false;
+      } else if (fatoSel && d.tipo === "fato") {
+        if (viz.herdaDe.has(d.id)) el.classList.add("herda-de");
+        if (viz.herdadoPor.has(d.id)) el.classList.add("herdado-por");
+      }
+      if (dim) el.classList.add("esmaecido");
+      item.dim = dim;
+    }
+    for (i = 0; i < this.rotulos.length; i++) {
+      item = this.rotulos[i];
+      dim = false;
+      for (var j = 0; j < this.circulos.length; j++) {
+        if (this.circulos[j].pack === item.pack) { dim = this.circulos[j].dim; break; }
+      }
+      item.el.classList.toggle("esmaecido", !!dim);
+    }
+    for (i = 0; i < this.arestasEl.length; i++) {
+      item = this.arestasEl[i];
+      el = item.el;
+      el.classList.remove("acesa", "esmaecido");
+      if (fatoSel) {
+        if (item.aresta.origem === this.foco.id || item.aresta.destino === this.foco.id) el.classList.add("acesa");
+        else el.classList.add("esmaecido");
+      }
+    }
+  };
+
+  Mapa.prototype.atualizarRotulos = function () {
+    var w = this.svg.clientWidth || 1000;
+    var k = this.escala;
+    var fonteMin = 11 * 1000 / (w * k);
+    var fonteArea = Math.max(fonteMin, 13 * 1000 / (w * k));
+    var fonteSub = Math.max(fonteMin, 11 * 1000 / (w * k));
+    var fonteFato = Math.max(fonteMin * 0.9, 10 * 1000 / (w * k));
+    var stroke = Math.max(2 / k, 0.4);
+    var i, r, raioTela, dest, d;
+    for (i = 0; i < this.rotulos.length; i++) {
+      r = this.rotulos[i];
+      d = r.pack.data;
+      if (r.tipo === "area") {
+        r.el.setAttribute("font-size", fonteArea);
+        r.el.setAttribute("y", r.pack.y - r.pack.r + fonteArea * 1.2);
+        r.el.setAttribute("stroke-width", stroke);
+        r.el.style.display = "";
+      } else if (r.tipo === "subarea") {
+        r.el.setAttribute("font-size", fonteSub);
+        r.el.setAttribute("y", r.pack.y + fonteSub * 0.35);
+        r.el.setAttribute("stroke-width", stroke);
+        r.el.style.display = "";
+      } else {
+        raioTela = r.pack.r * k * (w / 1000);
+        dest = this.destacados.has(d.id);
+        r.el.style.display = (dest || raioTela > 14) && !r.el.classList.contains("esmaecido") ? "" : "none";
+        r.el.setAttribute("font-size", fonteFato);
+        r.el.setAttribute("stroke-width", stroke);
+      }
+    }
+  };
+
+  Mapa.prototype.aoBuscar = function () {
+    var q = this.busca.value.trim().toLowerCase();
+    var i, n, primeiro = null;
+    if (!q) {
+      this.aplicarFiltros();
+      this.atualizarRotulos();
+      if (!this.foco) this.ajudaPainel();
+      return;
+    }
+    for (i = 0; i < this.dados.nos.length; i++) {
+      n = this.dados.nos[i];
+      if ((n.nome || "").toLowerCase().indexOf(q) !== -1 ||
+          (n.rotulo || "").toLowerCase().indexOf(q) !== -1) {
+        primeiro = this.indice[n.id] || n;
+        break;
+      }
+    }
+    this.aplicarFiltros();
+    this.atualizarRotulos();
+    if (primeiro) this.mostrarPainel(primeiro);
+    else this.ajudaPainel();
+  };
+
+  Mapa.prototype.preencherSaude = function (saude) {
+    var self = this;
+    function item(nome, n) {
+      return criar("span", null, n + " " + nome);
+    }
+    function botao(nome, n, filtro) {
+      var b = criar("button", {
+        type: "button",
+        "aria-pressed": self.filtroSaude === filtro ? "true" : "false"
+      }, n + " " + nome);
+      b.addEventListener("click", function () {
+        self.filtroSaude = self.filtroSaude === filtro ? null : filtro;
+        self.preencherSaude(self.dados.saude);
+        self.aplicarFiltros();
+        self.atualizarRotulos();
+      });
+      return b;
+    }
+    this.saudeEl.replaceChildren(
+      item("fatos", saude.fatos),
+      item("areas", saude.areas),
+      botao("pendentes", saude.pendentes, "pendentes"),
+      botao("ambiguos", saude.ambiguos, "ambiguos"),
+      item("orfaos", saude.orfaos)
+    );
+  };
+
+  Mapa.prototype.preencherLentes = function (lentes) {
+    var self = this;
+    var nomes = Object.keys(lentes);
+    this.lentesEl.replaceChildren();
+    nomes.forEach(function (nome) {
+      var b = criar("button", {
+        type: "button",
+        "aria-pressed": self.lente === nome ? "true" : "false"
+      }, nome);
+      b.addEventListener("click", function () {
+        self.lente = self.lente === nome ? null : nome;
+        var i, filhos = self.lentesEl.children;
+        for (i = 0; i < filhos.length; i++) {
+          filhos[i].setAttribute("aria-pressed", filhos[i].textContent === self.lente ? "true" : "false");
+        }
+        self.aplicarFiltros();
+        self.atualizarRotulos();
+      });
+      self.lentesEl.appendChild(b);
+    });
+  };
+
+  Mapa.prototype.ajudaPainel = function () {
+    this.painel.replaceChildren(
+      criar("div", { className: "k" }, "como ler"),
+      criar("p", null, "Circulo grande e area, medio e subarea, ponto e fato. Linha cheia e heranca (uses); pontilhada e link. Toque num fato: a cor de selecao e dele, uma cor e de quem herda ou aponta, outra e de quem herda dele ou aponta pra ele.")
+    );
+  };
+
+  Mapa.prototype.mostrarPainel = function (no) {
+    if (!no) {
+      this.ajudaPainel();
+      return;
+    }
+    var tipoNome = no.tipo === "fato" ? "fato" : no.tipo === "subarea" ? "subarea" : "area";
+    var onde = no.area + (no.subarea ? "/" + no.subarea : "");
+    var filhos = [
+      criar("div", { className: "k" }, tipoNome + " · " + onde),
+      criar("h2", null, no.tipo === "fato" ? no.rotulo : no.nome)
+    ];
+    if (no.descricao) filhos.push(criar("p", null, no.descricao));
+    if (no.tipo === "fato") {
+      filhos.push(criar("div", { className: "k" }, "caminho"));
+      filhos.push(criar("p", { className: "caminho" }, no.caminho));
+      filhos.push(this.acoesDoFato(no));
+      filhos.push(this.listaRelacoes(no));
+    }
+    this.painel.replaceChildren.apply(this.painel, filhos);
+  };
+
+  Mapa.prototype.acoesDoFato = function (no) {
+    var wrap = criar("div", { className: "acoes" });
+    var abs = (this.dados.raiz ? this.dados.raiz + "/" : "") + no.caminho;
+    var copiar = criar("button", { type: "button", "data-copy": abs }, "copiar caminho");
+    var editor = (this.dados.esquema_do_editor || "vscode") + "://file/" + abs;
+    var abrirEd = criar("a", { href: editor }, "abrir no editor");
+    wrap.appendChild(copiar);
+    wrap.appendChild(abrirEd);
+    if (this.dados.url_base_de_edicao) {
+      wrap.appendChild(criar("a", {
+        href: this.dados.url_base_de_edicao + "/" + no.caminho
+      }, "abrir na web"));
+    }
+    return wrap;
+  };
+
+  Mapa.prototype.listaRelacoes = function (no) {
+    var wrap = criar("div");
+    var herda = [];
+    var herdado = [];
+    var links = [];
+    var i, a;
+    for (i = 0; i < this.dados.arestas.length; i++) {
+      a = this.dados.arestas[i];
+      if (a.tipo === "uses" && a.origem === no.id) herda.push(a.destino);
+      else if (a.tipo === "uses" && a.destino === no.id) herdado.push(a.origem);
+      else if (a.tipo === "link" && a.origem === no.id) links.push(a.destino);
+      else if (a.tipo === "link" && a.destino === no.id) links.push(a.origem);
+    }
+    wrap.appendChild(this.blocoIds("herda de", herda, null));
+    wrap.appendChild(this.blocoIds("herdado por", herdado, null));
+    wrap.appendChild(this.blocoIds("links", links, null));
+    wrap.appendChild(this.blocoPendentes(no.pendentes || []));
+    wrap.appendChild(this.blocoAmbiguos(no.ambiguos || []));
+    return wrap;
+  };
+
+  Mapa.prototype.blocoIds = function (titulo, ids, classe) {
+    var wrap = criar("div", { className: classe || "" });
+    wrap.appendChild(criar("div", { className: "k" }, titulo));
+    if (!ids.length) {
+      wrap.appendChild(criar("p", { className: "mute" }, "nenhum"));
+      return wrap;
+    }
+    var ul = criar("ul");
+    var i, id, rotulo, no;
+    for (i = 0; i < ids.length; i++) {
+      id = ids[i];
+      no = this.indice[id];
+      rotulo = no ? no.rotulo : id;
+      ul.appendChild(criar("li", null, criar("button", {
+        type: "button",
+        className: "liga",
+        "data-id": id
+      }, rotulo)));
+    }
+    wrap.appendChild(ul);
+    return wrap;
+  };
+
+  Mapa.prototype.blocoPendentes = function (refs) {
+    var wrap = criar("div", { className: "txt-pendente" });
+    wrap.appendChild(criar("div", { className: "k" }, "referencias pendentes"));
+    if (!refs.length) {
+      wrap.appendChild(criar("p", { className: "mute" }, "nenhum"));
+      return wrap;
+    }
+    var ul = criar("ul");
+    var i;
+    for (i = 0; i < refs.length; i++) ul.appendChild(criar("li", null, refs[i]));
+    wrap.appendChild(ul);
+    return wrap;
+  };
+
+  Mapa.prototype.blocoAmbiguos = function (lista) {
+    var wrap = criar("div", { className: "txt-ambiguo" });
+    wrap.appendChild(criar("div", { className: "k" }, "referencias ambiguas"));
+    if (!lista.length) {
+      wrap.appendChild(criar("p", { className: "mute" }, "nenhum"));
+      return wrap;
+    }
+    var ul = criar("ul");
+    var i, j, item, li, cand;
+    for (i = 0; i < lista.length; i++) {
+      item = lista[i];
+      li = criar("li", null, item.ref + ": ");
+      cand = item.candidatos || [];
+      for (j = 0; j < cand.length; j++) {
+        if (j) li.appendChild(document.createTextNode(" "));
+        li.appendChild(criar("button", {
+          type: "button",
+          className: "liga",
+          "data-id": cand[j]
+        }, (this.indice[cand[j]] && this.indice[cand[j]].rotulo) || cand[j]));
+      }
+      ul.appendChild(li);
+    }
+    wrap.appendChild(ul);
+    return wrap;
+  };
+
+  Mapa.prototype.aoCliquePainel = function (e) {
+    var t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-copy") !== null) {
+      this.copiar(t.getAttribute("data-copy"), t);
+      return;
+    }
+    var btn = t && t.closest ? t.closest("[data-id]") : null;
+    if (btn && btn.getAttribute("data-id")) this.selecionarPorId(btn.getAttribute("data-id"));
+  };
+
+  Mapa.prototype.copiar = function (texto, botao) {
+    // http nao e contexto seguro: navigator.clipboard some
+    var original = botao.textContent;
+    function fim(ok) {
+      botao.textContent = ok ? "copiado" : "falhou";
+      setTimeout(function () { botao.textContent = original; }, 1500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texto).then(function () { fim(true); }).catch(function () {
+        fim(copiarFallback(texto));
+      });
+    } else fim(copiarFallback(texto));
+  };
+
+  function copiarFallback(texto) {
+    var x = document.createElement("textarea");
+    x.value = texto;
+    x.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(x);
+    x.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    x.remove();
+    return ok;
+  }
+
+  Mapa.prototype.iniciarPoll = function () {
+    if (location.protocol.indexOf("http") !== 0) return;
+    var self = this;
+    var ms = Math.max(1, this.dados.intervalo_s || 30) * 1000;
+    setInterval(function () { self.buscarAtualizacao(); }, ms);
+  };
+
+  Mapa.prototype.buscarAtualizacao = function () {
+    var self = this;
+    var cabecalhos = { "If-None-Match": this.etag };
+    fetch("data.json", { cache: "no-cache", headers: cabecalhos }).then(function (r) {
+      if (r.status !== 200) return null;
+      self.etag = r.headers.get("ETag") || "";
+      return r.text();
+    }).then(function (t) {
+      if (t == null || t === self.textoJson) return;
+      self.textoJson = t;
+      self.desenhar(JSON.parse(t), true);
+    }).catch(function (e) {
+      console.warn("mapa: fetch falhou", e);
+    });
+  };
+
+  var mapa = new Mapa(JSON.parse(document.getElementById("dados").textContent));
+  mapa.iniciar();
+})();
+</script>
+</body>
+</html>
