@@ -13,6 +13,8 @@ from memoro.mapa import ConfigDoMapa, GeradorDeMapa, No, Paleta  # noqa: E402
 
 SEGREDO = "CORPO-SECRETO-9F3A"
 
+MOLDE = Path(__file__).resolve().parent.parent / "memoro" / "mapa.html"
+
 
 class NoComCorpo:
     """Duble do fato do nucleo: tem corpo, que o mapa nunca pode ler."""
@@ -134,6 +136,14 @@ class TestePaleta(unittest.TestCase):
             self.assertTrue(all(0 <= m < 360 for m in matizes))
             self.assertGreaterEqual(self.distancia_minima(matizes), minimo, n)
 
+    def test_nenhuma_area_cai_em_faixa_de_matiz_reservada_a_estado(self):
+        # vermelho (345 a 20 graus) é do pendente e âmbar (25 a 55) é do ambíguo: área nenhuma pode parecer estado
+        grupos = [["area-%d" % i for i in range(n)] for n in (3, 8, 30)]
+        grupos.append(["casa", "estudo", "hobby", "trabalho", "saude-do-servidor"])
+        for areas in grupos:
+            for area, matiz in Paleta(areas).matizes().items():
+                self.assertTrue(55 < matiz < 345, "%s caiu em %d" % (area, matiz))
+
     def test_matiz_da_area_vai_pro_json(self):
         dados = json.loads(gerar(*cenario())[0])
         self.assertEqual({a["nome"]: a["matiz"] for a in dados["areas"]}, Paleta(["casa", "estudo", "hobby"]).matizes())
@@ -174,6 +184,23 @@ class TesteHtml(unittest.TestCase):
         _, html = gerar(*cenario())
         for trecho in ("prefers-color-scheme", "prefers-reduced-motion", ":focus-visible", "If-None-Match", 'id="legenda"', 'id="saude"'):
             self.assertIn(trecho, html, trecho)
+
+    def test_estado_tem_segunda_codificacao_alem_da_cor(self):
+        molde = MOLDE.read_text(encoding="utf-8")
+        for trecho in ("stroke-dasharray", "referência pendente", "referência ambígua"):
+            self.assertIn(trecho, molde, trecho)
+
+    def test_rotulo_encurta_e_nome_inteiro_fica_acessivel(self):
+        molde = MOLDE.read_text(encoding="utf-8")
+        self.assertIn(chr(0x2026), molde, "reticências no rótulo encurtado")
+        self.assertRegex(molde, r"""["']title["']""", "tooltip acessível: <title> criado por nó")
+
+    def test_texto_de_interface_tem_acento_e_uma_familia_so(self):
+        molde = MOLDE.read_text(encoding="utf-8")
+        for torto in ("Circulo", "circulo", "heranca", "selecao", "orfaos<", "Orfaos", " areas<", "Georgia", "serif;"):
+            self.assertNotIn(torto, molde.replace("sans-serif;", ""), torto)
+        proprias = [f for f in re.findall(r"font-family\s*:\s*([^;]+);", molde) if f.strip() != "inherit" and not f.strip().startswith("var(")]
+        self.assertEqual(len(proprias), 1, "uma pilha de fonte só; o resto herda")
 
 
 if __name__ == "__main__":
