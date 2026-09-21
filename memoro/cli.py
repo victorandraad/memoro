@@ -9,10 +9,12 @@ from pathlib import Path
 
 from dataclasses import asdict
 
+from memoro.adaptador_do_mapa import AdaptadorDoMapa
 from memoro.diario import DiarioDeEventos
 from memoro.dominio import IdInvalido
 from memoro.grafo import GrafoDeFatos
 from memoro.lentes import ErroDeLente, Lentes, Recall
+from memoro.mapa import ComandoMapa, ConfigDoMapa, GeradorDeMapa
 from memoro.porta import PortaDeEscrita, Recusa
 from memoro.repositorio import ErroDeRepositorio, RepositorioDeFatos
 
@@ -291,6 +293,31 @@ class ComandoPurga(Comando):
         return 0
 
 
+class ComandoDoMapa(Comando):
+    nome = "mapa"
+
+    def configurar(self, subparser):
+        subparser.add_argument("--titulo", default="Memória")
+        ComandoMapa(lambda: None, self._cli.raiz).configurar(subparser)
+
+    def executar(self, args):
+        raiz = self._cli.raiz
+        titulo = args.titulo
+
+        def fabrica():
+            repo = RepositorioDeFatos(raiz)
+            adaptador = AdaptadorDoMapa(GrafoDeFatos(repo.todos()))
+            lentes = Lentes(raiz / "lentes.json", repo.areas())
+            return GeradorDeMapa(
+                adaptador.nos(),
+                adaptador.arestas(),
+                dict(lentes._mapa),
+                ConfigDoMapa(titulo=titulo, raiz=str(raiz)),
+            )
+
+        return ComandoMapa(fabrica, raiz).executar(args)
+
+
 class ComandoLog(Comando):
     nome = "log"
 
@@ -326,7 +353,7 @@ class Cli:
             ComandoInit(self), ComandoShow(self), ComandoLs(self),
             ComandoRecall(self),
             ComandoAdd(self), ComandoUpdate(self), ComandoRm(self),
-            ComandoPurga(self), ComandoLog(self),
+            ComandoPurga(self), ComandoLog(self), ComandoDoMapa(self),
         )
 
     @property
