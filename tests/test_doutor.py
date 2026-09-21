@@ -190,5 +190,19 @@ class TesteAdocao(ComPorta):
         self.assertEqual(self.tipos(), [])
         self.assertEqual(len([e for e in self.eventos() if e.op == "adocao" and e.motivo == "lote"]), 30)
 
+    def test_adotar_tudo_monta_o_grafo_uma_vez_pro_lote(self):
+        # perfil medido: 300 adoções = 301 grafos montados; o retrato do lote é um só, o grafo também
+        from unittest import mock
+        from memoro import grafo as modulo
+        for i in range(30):
+            self.escrever("hobby", "peca-%02d" % i, desc="descrição única número %d zq%d" % (i, i * 7919),
+                          corpo="veja [[casa/rotina]] e [[sumiu-%d]]\n" % i)
+        original = modulo.GrafoDeFatos._montar
+        with mock.patch.object(modulo.GrafoDeFatos, "_montar", autospec=True, side_effect=original) as montar:
+            codigo, saida, erro = self.cli("adotar-tudo", "--motivo", "lote")
+        self.assertEqual(codigo, 0, erro)
+        self.assertIn("30 adotados", saida)
+        self.assertLessEqual(montar.call_count, 4)
+
     def test_adotar_tudo_exige_motivo(self):
         self.assertNotEqual(self.cli("adotar-tudo")[0], 0)
