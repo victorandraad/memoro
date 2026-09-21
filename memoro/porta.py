@@ -11,6 +11,7 @@ from pathlib import Path
 from memoro.diario import DiarioDeEventos
 from memoro.dominio import Evento, Fato, IdDeFato, IdInvalido
 from memoro.formato import LeitorDeFrontmatter, problemas_do_frontmatter
+from memoro.grafo import GrafoDeFatos
 from memoro.repositorio import FatoNaoEncontrado, ReferenciaAmbigua, RepositorioDeFatos
 from memoro.validacao import Pedido, Validador
 
@@ -210,25 +211,29 @@ class PortaDeEscrita:
             return adotados, recusados
         existentes = tuple(self._repositorio.todos())
         areas = tuple(self._repositorio.areas())
+        grafo = GrafoDeFatos(existentes)
+        eventos = []
         for ref in refs:
             try:
-                ident, caminho, avisos = self._adotar_um(ref, motivo, existentes, areas)
+                ident, caminho, avisos = self._adotar_um(ref, motivo, existentes, areas, grafo)
             except Recusa as exc:
-                self._registrar("adocao", ref, "", "", False, str(exc), "")
+                eventos.append(self._evento("adocao", ref, "", "", False, str(exc), ""))
                 recusados.append((ref, str(exc)))
                 continue
             except (IdInvalido, FatoNaoEncontrado, ReferenciaAmbigua) as exc:
-                self._registrar("adocao", ref, "", "", False, str(exc), "")
+                eventos.append(self._evento("adocao", ref, "", "", False, str(exc), ""))
                 recusados.append((ref, str(exc)))
                 continue
             blob = caminho.read_bytes()
             resumo = "+%d linhas" % len(blob.decode("utf-8", errors="replace").splitlines())
-            self._registrar(
+            eventos.append(self._evento(
                 "adocao", str(ident), ident.area, resumo, True, motivo,
                 hashlib.sha256(blob).hexdigest(),
-            )
+            ))
             adotados.append(Resultado(ident, caminho, tuple(avisos)))
             caminhos.append(caminho)
+        if eventos:
+            self.diario.registrar_varios(eventos)
         if caminhos:
             mensagem = "memoro adocao %s" % adotados[0].id if len(adotados) == 1 else "memoro adocao"
             aviso_git = self._versionador.commitar(caminhos, mensagem)
@@ -236,7 +241,7 @@ class PortaDeEscrita:
                 adotados = [Resultado(r.id, r.caminho, r.avisos + (aviso_git,)) for r in adotados]
         return adotados, recusados
 
-    def _adotar_um(self, ref, motivo, existentes, areas):
+    def _adotar_um(self, ref, motivo, existentes, areas, grafo=None):
         if not (motivo or "").strip():
             raise Recusa("adoção exige motivo")
         ident, caminho = self._resolver_para_adotar(ref, existentes)
@@ -254,7 +259,9 @@ class PortaDeEscrita:
             uses=tuple(campos.get("uses") or ()),
             scope=tuple(campos.get("scope") or ()),
         )
-        avisos = self._validar("adocao", ident, fato, motivo, existentes=existentes, areas=areas)
+        avisos = self._validar(
+            "adocao", ident, fato, motivo, existentes=existentes, areas=areas, grafo=grafo,
+        )
         return ident, caminho, avisos
 
     def _resolver_para_adotar(self, ref, existentes=None):
@@ -296,7 +303,7 @@ class PortaDeEscrita:
             self._registrar("purga", ident, area, "purga", True, aviso or "", "")
         return removidos
 
-    def _validar(self, op, ident, fato, motivo, novo_mesmo_assim=False, existentes=None, areas=None):
+    def _validar(self, op, ident, fato, motivo, novo_mesmo_assim=False, existentes=None, areas=None, grafo=None):
         pedido = Pedido(
             op=op,
             id=ident,
@@ -305,6 +312,7 @@ class PortaDeEscrita:
             existentes=tuple(self._repositorio.todos() if existentes is None else existentes),
             areas=tuple(self._repositorio.areas() if areas is None else areas),
             novo_mesmo_assim=novo_mesmo_assim,
+            grafo=grafo,
         )
         achados = self._validador.avaliar(pedido)
         recusas = [a.mensagem for a in achados if a.recusa]
@@ -323,8 +331,8 @@ class PortaDeEscrita:
         )
         return Resultado(ident, caminho, tuple(avisos))
 
-    def _registrar(self, op, ident, area, resumo, ok, motivo, hash_do_conteudo):
-        self.diario.registrar(Evento(
+    def _evento(self, op, ident, area, resumo, ok, motivo, hash_do_conteudo):
+        return Evento(
             ts=self._relogio().isoformat(timespec="seconds"),
             usuario=self._usuario,
             op=op,
@@ -334,7 +342,10 @@ class PortaDeEscrita:
             ok=ok,
             motivo=motivo or "",
             hash_do_conteudo=hash_do_conteudo,
-        ))
+        )
+
+    def _registrar(self, op, ident, area, resumo, ok, motivo, hash_do_conteudo):
+        self.diario.registrar(self._evento(op, ident, area, resumo, ok, motivo, hash_do_conteudo))
 
     def _id_lixeira(self, caminho):
         marcador = "/areas/_lixeira/"

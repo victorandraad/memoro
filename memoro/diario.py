@@ -21,7 +21,15 @@ class DiarioDeEventos:
         self._caminho = Path(caminho)
 
     def registrar(self, evento):
-        blob = (json.dumps(asdict(evento), ensure_ascii=False) + "\n").encode("utf-8")
+        self.registrar_varios((evento,))
+
+    def registrar_varios(self, eventos):
+        if not eventos:
+            return
+        blob = b"".join(
+            (json.dumps(asdict(evento), ensure_ascii=False) + "\n").encode("utf-8")
+            for evento in eventos
+        )
         fd = os.open(str(self._caminho), os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o644)
         try:
             fcntl.flock(fd, fcntl.LOCK_EX)

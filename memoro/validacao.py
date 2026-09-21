@@ -25,6 +25,7 @@ class Pedido:
     existentes: tuple = ()
     areas: tuple = ()
     novo_mesmo_assim: bool = False
+    grafo: object = None
 
 
 class Regra(ABC):
@@ -115,9 +116,11 @@ class RegraDeReferencias(Regra):
     def avaliar(self, pedido):
         if pedido.op not in ("add", "update", "adocao"):
             return []
-        fatos = [f for f in pedido.existentes if str(f.id) != str(pedido.id)]
-        fatos.append(pedido.fato)
-        grafo = GrafoDeFatos(fatos)
+        grafo = pedido.grafo
+        if grafo is None:
+            fatos = [f for f in pedido.existentes if str(f.id) != str(pedido.id)]
+            fatos.append(pedido.fato)
+            grafo = GrafoDeFatos(fatos)
         ident = str(pedido.id)
         achados = []
         for pendente in grafo.pendentes_de(ident):
