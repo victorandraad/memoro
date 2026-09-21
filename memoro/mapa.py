@@ -1,4 +1,4 @@
-"""Gera o mapa estatico da memoria (index.html + data.json) e o serve em loopback.
+"""Gera o mapa estático da memória (index.html + data.json) e o serve em loopback.
 
 Contrato de entrada (o gerador so le estes campos, nunca o corpo do fato):
 
@@ -8,7 +8,7 @@ No / NoDoMapa
     descricao  str  texto curto; o mapa corta em 300 caracteres
     area       str
     subarea    str | None
-    caminho    str  relativo a raiz da memoria
+    caminho    str  relativo a raiz da memória
     pendentes  lista[str]  refs que nao resolveram (default [])
     ambiguos   lista[{"ref": str, "candidatos": lista[str]}]  (default [])
 
@@ -174,10 +174,10 @@ class GeradorDeMapa:
 
 
 class ServidorDoMapa:
-    def __init__(self, saida, fabrica_de_gerador: Callable, raiz_da_memoria, porta: int = 0):
+    def __init__(self, saida, fabrica_de_gerador: Callable, raiz_dos_fatos, porta: int = 0):
         self._saida = Path(saida)
         self._fabrica = fabrica_de_gerador
-        self._raiz = Path(raiz_da_memoria)
+        self._raiz = Path(raiz_dos_fatos)
         self._porta = porta
         self._httpd: Optional[HTTPServer] = None
         self._thread: Optional[threading.Thread] = None
@@ -261,9 +261,9 @@ class ServidorDoMapa:
 class ComandoMapa:
     nome = "mapa"
 
-    def __init__(self, fabrica_de_gerador: Callable, raiz_da_memoria):
+    def __init__(self, fabrica_de_gerador: Callable, raiz_dos_fatos):
         self._fabrica = fabrica_de_gerador
-        self._raiz = Path(raiz_da_memoria)
+        self._raiz = Path(raiz_dos_fatos)
 
     def configurar(self, parser) -> None:
         parser.add_argument("--saida", default=None)
