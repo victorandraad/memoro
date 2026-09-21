@@ -27,6 +27,14 @@
   --fato-l: 48%;
   --amostra: 210;
   --sombra: 0 1px 8px hsl(210 20% 20% / 0.12);
+  --fs-1: 12px;
+  --fs-2: 13px;
+  --fs-3: 15px;
+  --fs-4: 18px;
+  --fs-5: 24px;
+  --traco-pendente: 5 3;
+  --traco-ambiguo: 2 2;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -54,16 +62,18 @@ html, body { margin: 0; height: 100%; overflow-x: hidden; }
 body {
   background: var(--bg);
   color: var(--ink);
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: var(--fs-3);
+  line-height: 1.45;
   padding: 12px var(--gutter);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+button, input, select { font-family: inherit; }
 header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; }
-h1, #painel h2 { font: 600 22px/1.15 Georgia, serif; margin: 0; }
-#painel h2 { font-size: 18px; word-break: break-word; }
+h1 { font-size: var(--fs-5); font-weight: 600; line-height: 1.15; margin: 0; }
+#painel h2 { font-size: var(--fs-4); font-weight: 600; margin: 0; word-break: break-word; }
 #saude { color: var(--mute); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 4px 10px; }
 #saude button {
   font: inherit;
@@ -89,7 +99,7 @@ h1, #painel h2 { font: 600 22px/1.15 Georgia, serif; margin: 0; }
 #lentes { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
 #lentes button, .zoom button, #painel .acoes a, #painel .acoes button, .liga {
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-2);
   border: 1px solid var(--line);
   background: transparent;
   color: var(--mute);
@@ -99,7 +109,7 @@ h1, #painel h2 { font: 600 22px/1.15 Georgia, serif; margin: 0; }
   white-space: nowrap;
 }
 #lentes button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-#legenda { color: var(--mute); font-size: 13px; }
+#legenda { color: var(--mute); font-size: var(--fs-2); }
 #legenda summary { cursor: pointer; }
 .itens-legenda {
   display: flex;
@@ -136,9 +146,16 @@ h1, #painel h2 { font: 600 22px/1.15 Georgia, serif; margin: 0; }
 .am-sel { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--sel); }
 .am-herda { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--herda-de); }
 .am-herdado { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--herdado-por); }
-.am-pendente { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--pendente); }
-.am-ambiguo { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); box-shadow: inset 0 0 0 2px var(--ambiguo); border-radius: 50%; }
 .am-orfao { background: hsl(var(--amostra) var(--fato-s) var(--fato-l)); opacity: var(--orfao-alfa); }
+.am-svg, .ico-estado {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  margin-right: 6px;
+  overflow: visible;
+  flex: 0 0 14px;
+}
+.am-svg .fato, .ico-estado .fato { cursor: default; --matiz: var(--amostra); }
 main { flex: 1; min-height: 0; position: relative; }
 svg {
   width: 100%;
@@ -170,10 +187,10 @@ svg {
   overflow: auto;
   z-index: 3;
 }
-#painel .k { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); margin: 10px 0 4px; }
+#painel .k { font-size: var(--fs-1); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); margin: 10px 0 4px; display: flex; align-items: center; gap: 6px; }
 #painel .k:first-child { margin-top: 0; }
-#painel p { margin: 0 0 8px; font-family: Georgia, serif; font-size: 15px; }
-#painel .caminho { font: 12px/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
+#painel p { margin: 0 0 8px; font-size: var(--fs-3); }
+#painel .caminho { font-size: var(--fs-1); line-height: 1.4; overflow-wrap: anywhere; }
 #painel .acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 #painel .acoes a, #painel .acoes button { color: var(--ink); text-decoration: none; border-radius: 4px; }
 #painel ul { margin: 0; padding: 0; list-style: none; }
@@ -192,11 +209,11 @@ circle, path, text { transition: opacity 0.15s; }
 }
 .subarea { fill: hsl(var(--matiz) var(--fato-s) var(--fato-l) / var(--sub-alfa)); }
 .fato.orfao { fill-opacity: var(--orfao-alfa); }
-.fato.ambiguo { stroke: var(--ambiguo); stroke-dasharray: 4 3; stroke-width: 2; }
-.fato.pendente { stroke: var(--pendente); stroke-dasharray: none; stroke-width: 2; }
-.fato.herda-de, .area.herda-de, .subarea.herda-de { stroke: var(--herda-de); stroke-dasharray: none; stroke-width: 2; }
-.fato.herdado-por, .area.herdado-por, .subarea.herdado-por { stroke: var(--herdado-por); stroke-dasharray: none; stroke-width: 2; }
-.fato.sel, .area.sel, .subarea.sel { stroke: var(--sel); stroke-dasharray: none; stroke-width: 2.5; }
+.fato.ambiguo { stroke: var(--ambiguo); stroke-dasharray: var(--traco-ambiguo); stroke-width: 2.5; }
+.fato.pendente { stroke: var(--pendente); stroke-dasharray: var(--traco-pendente); stroke-width: 2.5; }
+.fato.herda-de, .area.herda-de, .subarea.herda-de { stroke: var(--herda-de); stroke-width: 2.5; }
+.fato.herdado-por, .area.herdado-por, .subarea.herdado-por { stroke: var(--herdado-por); stroke-width: 2.5; }
+.fato.sel, .area.sel, .subarea.sel { stroke: var(--sel); stroke-width: 3; }
 .esmaecido { opacity: var(--esmaece); }
 .aresta { fill: none; stroke: var(--aresta); stroke-width: 1.2; opacity: 0.45; pointer-events: none; }
 .aresta.link { stroke-width: 0.7; stroke-dasharray: 3 3; }
@@ -211,7 +228,6 @@ circle, path, text { transition: opacity 0.15s; }
   stroke: var(--bg);
   stroke-width: 3px;
   font-weight: 600;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 .rotulo.area { text-transform: uppercase; letter-spacing: 0.04em; }
 .rotulo.subarea { fill: var(--mute); font-weight: 500; }
@@ -219,16 +235,18 @@ circle, path, text { transition: opacity 0.15s; }
 :focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
 @media (max-width: 600px) {
   #busca { width: 100%; margin-left: 0; }
+  header, #lentes, #legenda, main { max-width: 100%; }
   #painel {
     top: auto;
     bottom: 0;
     max-height: 60%;
     overflow: auto;
     width: 100%;
+    border-radius: 6px 6px 0 0;
   }
   #painel .acoes { flex-direction: column; }
   #painel .acoes a, #painel .acoes button { text-align: center; }
-  .zoom { top: auto; bottom: calc(8px + 0px); }
+  .zoom { top: 8px; bottom: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -246,16 +264,16 @@ circle, path, text { transition: opacity 0.15s; }
 <summary>legenda</summary>
 <ul class="itens-legenda">
 <li><span class="am am-fato"></span>fato</li>
-<li><span class="am am-area"></span>area</li>
-<li><span class="am am-sub"></span>subarea</li>
-<li><span class="am am-uses"></span>heranca uses</li>
+<li><span class="am am-area"></span>área</li>
+<li><span class="am am-sub"></span>subárea</li>
+<li><span class="am am-uses"></span>herança uses</li>
 <li><span class="am am-link"></span>link</li>
 <li><span class="am am-sel"></span>selecionado</li>
 <li><span class="am am-herda"></span>herda de</li>
 <li><span class="am am-herdado"></span>herdado por</li>
-<li><span class="am am-pendente"></span>pendente</li>
-<li><span class="am am-ambiguo"></span>ambiguo</li>
-<li><span class="am am-orfao"></span>orfao</li>
+<li><svg class="am-svg" viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><circle class="fato pendente" cx="7" cy="7" r="5"></circle></svg>referência pendente</li>
+<li><svg class="am-svg" viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><circle class="fato ambiguo" cx="7" cy="7" r="5"></circle></svg>referência ambígua</li>
+<li><span class="am am-orfao"></span>órfão</li>
 </ul>
 </details>
 <main>
@@ -277,6 +295,8 @@ __D3_HIERARCHY__
   var LIMIAR_ARRASTO = 5;
   var CX = 500;
   var CY = 500;
+  var RETICENCIAS = "…";
+  var RAIO_MIN_TELA = 10;
 
   function criar(tag, attrs) {
     var n = document.createElement(tag);
@@ -309,6 +329,27 @@ __D3_HIERARCHY__
     return n;
   }
 
+  function tituloSvg(texto) {
+    var t = document.createElementNS(NS, "title");
+    t.textContent = texto;
+    return t;
+  }
+
+  function larguraEstimada(texto, fontePx) {
+    return (texto || "").length * fontePx * 0.62;
+  }
+
+  function encurtarRotulo(texto, maxPx, fontePx) {
+    if (!texto) return "";
+    if (larguraEstimada(texto, fontePx) <= maxPx) return texto;
+    var i, s;
+    for (i = texto.length - 1; i >= 1; i--) {
+      s = texto.slice(0, i) + RETICENCIAS;
+      if (larguraEstimada(s, fontePx) <= maxPx) return s;
+    }
+    return RETICENCIAS;
+  }
+
   function Mapa(dados) {
     this.dados = dados;
     this.escala = 1;
@@ -324,7 +365,7 @@ __D3_HIERARCHY__
     this.saudeEl = document.getElementById("saude");
     this.lentesEl = document.getElementById("lentes");
     this.indice = {};
-    this.circulos = [];
+    this.discos = [];
     this.arestasEl = [];
     this.rotulos = [];
     this.destacados = new Set();
@@ -332,6 +373,7 @@ __D3_HIERARCHY__
     this.arrasto = null;
     this.pinca = null;
     this.bloquearClique = false;
+    this.rafRotulos = 0;
     this.textoJson = document.getElementById("dados").textContent;
     this.etag = "";
   }
@@ -384,7 +426,7 @@ __D3_HIERARCHY__
         self.busca.focus();
       }
     });
-    window.addEventListener("resize", function () { self.atualizarRotulos(); });
+    window.addEventListener("resize", function () { self.pedirRotulos(); });
   };
 
   Mapa.prototype.desenhar = function (dados, preservar) {
@@ -396,7 +438,7 @@ __D3_HIERARCHY__
     this.lente = lente;
     var self = this;
     this.indice = {};
-    this.circulos = [];
+    this.discos = [];
     this.arestasEl = [];
     this.rotulos = [];
     this.destacados = new Set();
@@ -431,24 +473,27 @@ __D3_HIERARCHY__
         "data-id": d.id
       });
       circ.style.setProperty("--matiz", String(d.matiz));
+      circ.appendChild(tituloSvg(d.tipo === "fato" ? (d.rotulo || d.nome) : d.nome));
       if (d.tipo === "fato") {
         if (d.orfao) circ.classList.add("orfao");
         if (d.ambiguos && d.ambiguos.length) circ.classList.add("ambiguo");
         if (d.pendentes && d.pendentes.length) circ.classList.add("pendente");
         circ.setAttribute("tabindex", "0");
         circ.setAttribute("role", "button");
-        circ.setAttribute("aria-label", d.rotulo);
-        circ.addEventListener("keydown", function (e) {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            self.selecionarPorId(d.id);
-          }
-        });
+        circ.setAttribute("aria-label", d.rotulo || d.nome);
+        circ.addEventListener("keydown", (function (id) {
+          return function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              self.selecionarPorId(id);
+            }
+          };
+        })(d.id));
         porIdPack[d.id] = p;
         this.indice[d.id] = d;
       }
       this.grupo.appendChild(circ);
-      this.circulos.push({ el: circ, pack: p, dado: d });
+      this.discos.push({ el: circ, pack: p, dado: d });
     }
 
     for (i = 0; i < dados.arestas.length; i++) {
@@ -474,11 +519,16 @@ __D3_HIERARCHY__
       txt = svgEl("text", {
         class: "rotulo " + d.tipo,
         x: p.x,
-        y: d.tipo === "area" ? p.y - p.r + 18 : p.y + 3
+        y: (d.tipo === "area" || d.tipo === "subarea") ? p.y - p.r + 18 : p.y + 3
       });
       txt.textContent = d.tipo === "fato" ? d.rotulo : d.nome;
       this.grupo.appendChild(txt);
-      this.rotulos.push({ el: txt, pack: p, tipo: d.tipo });
+      this.rotulos.push({
+        el: txt,
+        pack: p,
+        tipo: d.tipo,
+        nome: d.tipo === "fato" ? (d.rotulo || d.nome) : d.nome
+      });
     }
 
     this.preencherSaude(dados.saude);
@@ -487,9 +537,9 @@ __D3_HIERARCHY__
 
     if (focoTipo === "fato" && this.indice[focoId]) this.selecionarPorId(focoId);
     else if (focoId) {
-      for (i = 0; i < this.circulos.length; i++) {
-        if (this.circulos[i].dado.id === focoId && this.circulos[i].dado.tipo === focoTipo) {
-          this.selecionarNo(this.circulos[i].dado);
+      for (i = 0; i < this.discos.length; i++) {
+        if (this.discos[i].dado.id === focoId && this.discos[i].dado.tipo === focoTipo) {
+          this.selecionarNo(this.discos[i].dado);
           break;
         }
       }
@@ -589,7 +639,7 @@ __D3_HIERARCHY__
     this.tx = p.x - wx * k1;
     this.ty = p.y - wy * k1;
     this.aplicarTransform();
-    this.atualizarRotulos();
+    this.pedirRotulos();
   };
 
   Mapa.prototype.zoomCentro = function (nova) {
@@ -602,7 +652,7 @@ __D3_HIERARCHY__
     this.tx = 0;
     this.ty = 0;
     this.aplicarTransform();
-    this.atualizarRotulos();
+    this.pedirRotulos();
   };
 
   Mapa.prototype.aoPointerDown = function (e) {
@@ -645,7 +695,7 @@ __D3_HIERARCHY__
       this.tx = p.x - this.pinca.wx * k1;
       this.ty = p.y - this.pinca.wy * k1;
       this.aplicarTransform();
-      this.atualizarRotulos();
+      this.pedirRotulos();
       return;
     }
     if (this.arrasto) {
@@ -686,8 +736,8 @@ __D3_HIERARCHY__
     if (tipo === "fato" && id) this.selecionarPorId(id);
     else if ((tipo === "area" || tipo === "subarea") && id) {
       var i, d;
-      for (i = 0; i < this.circulos.length; i++) {
-        d = this.circulos[i].dado;
+      for (i = 0; i < this.discos.length; i++) {
+        d = this.discos[i].dado;
         if (d.tipo === tipo && d.id === id) {
           this.selecionarNo(d);
           return;
@@ -713,9 +763,14 @@ __D3_HIERARCHY__
     this.filtroSaude = null;
     this.busca.value = "";
     this.preencherSaude(this.dados.saude);
-    this.ajudaPainel();
+    this.fecharPainel();
     this.aplicarFiltros();
     this.atualizarRotulos();
+  };
+
+  Mapa.prototype.fecharPainel = function () {
+    this.painel.hidden = true;
+    this.painel.replaceChildren();
   };
 
   Mapa.prototype.naLente = function (no) {
@@ -767,8 +822,8 @@ __D3_HIERARCHY__
     var fatoSel = this.foco && this.foco.tipo === "fato";
     this.destacados = viz.ids;
     var i, item, d, el, dim;
-    for (i = 0; i < this.circulos.length; i++) {
-      item = this.circulos[i];
+    for (i = 0; i < this.discos.length; i++) {
+      item = this.discos[i];
       d = item.dado;
       el = item.el;
       el.classList.remove("sel", "herda-de", "herdado-por", "esmaecido");
@@ -792,8 +847,8 @@ __D3_HIERARCHY__
     for (i = 0; i < this.rotulos.length; i++) {
       item = this.rotulos[i];
       dim = false;
-      for (var j = 0; j < this.circulos.length; j++) {
-        if (this.circulos[j].pack === item.pack) { dim = this.circulos[j].dim; break; }
+      for (var j = 0; j < this.discos.length; j++) {
+        if (this.discos[j].pack === item.pack) { dim = this.discos[j].dim; break; }
       }
       item.el.classList.toggle("esmaecido", !!dim);
     }
@@ -808,34 +863,56 @@ __D3_HIERARCHY__
     }
   };
 
+  Mapa.prototype.pedirRotulos = function () {
+    var self = this;
+    if (this.rafRotulos) return;
+    this.rafRotulos = requestAnimationFrame(function () {
+      self.rafRotulos = 0;
+      self.atualizarRotulos();
+    });
+  };
+
+  Mapa.prototype.filhosVisiveis = function (pack, k, px, limiar) {
+    var filhos = pack.children || [];
+    var i;
+    for (i = 0; i < filhos.length; i++) {
+      if (filhos[i].r * k * px >= limiar) return true;
+    }
+    return false;
+  };
+
   Mapa.prototype.atualizarRotulos = function () {
     var w = this.svg.clientWidth || 1000;
     var k = this.escala;
-    var fonteMin = 11 * 1000 / (w * k);
-    var fonteArea = Math.max(fonteMin, 13 * 1000 / (w * k));
-    var fonteSub = Math.max(fonteMin, 11 * 1000 / (w * k));
-    var fonteFato = Math.max(fonteMin * 0.9, 10 * 1000 / (w * k));
-    var stroke = Math.max(2 / k, 0.4);
-    var i, r, raioTela, dest, d;
+    var px = w / 1000;
+    var stroke = Math.max(0.4, 3 / k);
+    var i, r, d, raioTela, fonteUser, fonteTela, maxTela, visivel, dest;
     for (i = 0; i < this.rotulos.length; i++) {
       r = this.rotulos[i];
       d = r.pack.data;
-      if (r.tipo === "area") {
-        r.el.setAttribute("font-size", fonteArea);
-        r.el.setAttribute("y", r.pack.y - r.pack.r + fonteArea * 1.2);
-        r.el.setAttribute("stroke-width", stroke);
-        r.el.style.display = "";
-      } else if (r.tipo === "subarea") {
-        r.el.setAttribute("font-size", fonteSub);
-        r.el.setAttribute("y", r.pack.y + fonteSub * 0.35);
-        r.el.setAttribute("stroke-width", stroke);
-        r.el.style.display = "";
+      raioTela = r.pack.r * k * px;
+      visivel = raioTela >= RAIO_MIN_TELA && !r.el.classList.contains("esmaecido");
+      if (r.tipo === "area" || r.tipo === "subarea") {
+        if (this.filhosVisiveis(r.pack, k, px, RAIO_MIN_TELA)) visivel = false;
+        fonteUser = Math.max(8, Math.min(r.pack.r * 0.2, 22));
+        r.el.setAttribute("y", r.pack.y - r.pack.r + fonteUser * 1.15);
+        maxTela = Math.max(0, raioTela * 1.6);
       } else {
-        raioTela = r.pack.r * k * (w / 1000);
         dest = this.destacados.has(d.id);
-        r.el.style.display = (dest || raioTela > 14) && !r.el.classList.contains("esmaecido") ? "" : "none";
-        r.el.setAttribute("font-size", fonteFato);
-        r.el.setAttribute("stroke-width", stroke);
+        if (dest && raioTela >= 6) visivel = !r.el.classList.contains("esmaecido");
+        fonteUser = Math.max(7, Math.min(r.pack.r * 0.42, 16));
+        r.el.setAttribute("y", r.pack.y + fonteUser * 0.35);
+        maxTela = Math.max(0, raioTela * 1.7);
+      }
+      fonteTela = fonteUser * k * px;
+      r.el.setAttribute("font-size", fonteUser);
+      r.el.setAttribute("stroke-width", stroke);
+      if (visivel) {
+        r.el.style.display = "";
+        r.el.textContent = encurtarRotulo(r.nome, maxTela, fonteTela);
+      } else {
+        r.el.style.display = "none";
+        r.el.textContent = "";
       }
     }
   };
@@ -883,10 +960,10 @@ __D3_HIERARCHY__
     }
     this.saudeEl.replaceChildren(
       item("fatos", saude.fatos),
-      item("areas", saude.areas),
+      item("áreas", saude.areas),
       botao("pendentes", saude.pendentes, "pendentes"),
-      botao("ambiguos", saude.ambiguos, "ambiguos"),
-      item("orfaos", saude.orfaos)
+      botao("ambíguos", saude.ambiguos, "ambiguos"),
+      item("órfãos", saude.orfaos)
     );
   };
 
@@ -913,10 +990,28 @@ __D3_HIERARCHY__
   };
 
   Mapa.prototype.ajudaPainel = function () {
+    this.painel.hidden = false;
     this.painel.replaceChildren(
       criar("div", { className: "k" }, "como ler"),
-      criar("p", null, "Circulo grande e area, medio e subarea, ponto e fato. Linha cheia e heranca (uses); pontilhada e link. Toque num fato: a cor de selecao e dele, uma cor e de quem herda ou aponta, outra e de quem herda dele ou aponta pra ele.")
+      criar("p", null, "Círculo grande é área, médio é subárea, ponto é fato. Linha cheia é herança (uses); pontilhada é link. Toque num fato: a cor de seleção é dele, uma cor é de quem herda ou aponta, outra é de quem herda dele ou aponta pra ele.")
     );
+  };
+
+  Mapa.prototype.iconeEstado = function (classe) {
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "ico-estado");
+    svg.setAttribute("viewBox", "0 0 14 14");
+    svg.setAttribute("width", "14");
+    svg.setAttribute("height", "14");
+    svg.setAttribute("aria-hidden", "true");
+    var c = document.createElementNS(NS, "circle");
+    c.setAttribute("class", "fato " + classe);
+    c.setAttribute("cx", "7");
+    c.setAttribute("cy", "7");
+    c.setAttribute("r", "5");
+    c.style.setProperty("--matiz", "210");
+    svg.appendChild(c);
+    return svg;
   };
 
   Mapa.prototype.mostrarPainel = function (no) {
@@ -924,19 +1019,23 @@ __D3_HIERARCHY__
       this.ajudaPainel();
       return;
     }
-    var tipoNome = no.tipo === "fato" ? "fato" : no.tipo === "subarea" ? "subarea" : "area";
+    var tipoNome = no.tipo === "fato" ? "fato" : no.tipo === "subarea" ? "subárea" : "área";
     var onde = no.area + (no.subarea ? "/" + no.subarea : "");
     var filhos = [
       criar("div", { className: "k" }, tipoNome + " · " + onde),
       criar("h2", null, no.tipo === "fato" ? no.rotulo : no.nome)
     ];
-    if (no.descricao) filhos.push(criar("p", null, no.descricao));
+    if (no.descricao) {
+      filhos.push(criar("div", { className: "k" }, "descrição"));
+      filhos.push(criar("p", null, no.descricao));
+    }
     if (no.tipo === "fato") {
       filhos.push(criar("div", { className: "k" }, "caminho"));
       filhos.push(criar("p", { className: "caminho" }, no.caminho));
       filhos.push(this.acoesDoFato(no));
       filhos.push(this.listaRelacoes(no));
     }
+    this.painel.hidden = false;
     this.painel.replaceChildren.apply(this.painel, filhos);
   };
 
@@ -1002,7 +1101,7 @@ __D3_HIERARCHY__
 
   Mapa.prototype.blocoPendentes = function (refs) {
     var wrap = criar("div", { className: "txt-pendente" });
-    wrap.appendChild(criar("div", { className: "k" }, "referencias pendentes"));
+    wrap.appendChild(criar("div", { className: "k" }, this.iconeEstado("pendente"), "referência pendente"));
     if (!refs.length) {
       wrap.appendChild(criar("p", { className: "mute" }, "nenhum"));
       return wrap;
@@ -1016,7 +1115,7 @@ __D3_HIERARCHY__
 
   Mapa.prototype.blocoAmbiguos = function (lista) {
     var wrap = criar("div", { className: "txt-ambiguo" });
-    wrap.appendChild(criar("div", { className: "k" }, "referencias ambiguas"));
+    wrap.appendChild(criar("div", { className: "k" }, this.iconeEstado("ambiguo"), "referência ambígua"));
     if (!lista.length) {
       wrap.appendChild(criar("p", { className: "mute" }, "nenhum"));
       return wrap;

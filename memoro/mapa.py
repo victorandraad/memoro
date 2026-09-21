@@ -41,6 +41,10 @@ from urllib.parse import urlsplit
 
 PASSO_DE_OURO = 137.508
 DESLOCAMENTO_DA_PALETA = 0
+# arco livre: pula vermelho 345-20 (pendente) e ambar 25-55 (ambiguo)
+INICIO_DO_ARCO_LIVRE = 56
+ARCO_LIVRE = 288
+PASSO_NO_ARCO_LIVRE = PASSO_DE_OURO * ARCO_LIVRE / 360
 LIMITE_DA_DESCRICAO = 300
 ROTAS_SERVICAS = ("/", "/index.html", "/data.json")
 
@@ -78,7 +82,7 @@ class ConfigDoMapa:
 
 
 class Paleta:
-    """Matiz estavel por area: ordem por sha256, depois passo de ouro no circulo."""
+    """Matiz estavel por area: ordem por sha256, passo de ouro no arco 56-344."""
 
     def __init__(self, areas: Sequence[str]):
         self._areas = list(areas)
@@ -86,7 +90,10 @@ class Paleta:
     def matizes(self) -> dict:
         unicas = sorted(set(self._areas), key=_chave_estavel)
         return {
-            area: int(round((DESLOCAMENTO_DA_PALETA + i * PASSO_DE_OURO) % 360) % 360)
+            area: int(round(
+                INICIO_DO_ARCO_LIVRE
+                + (DESLOCAMENTO_DA_PALETA + i * PASSO_NO_ARCO_LIVRE) % ARCO_LIVRE
+            ))
             for i, area in enumerate(unicas)
         }
 
