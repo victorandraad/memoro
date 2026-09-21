@@ -1,8 +1,55 @@
 # memoro
 
-**Memória em markdown com mapa vivo, sem stack.** Um fato por arquivo, uma única porta de escrita,
-e uma página estática que mostra tudo o que você (ou o seu agente) sabe. Só biblioteca padrão do
-Python (3.9+): sem banco, sem serviço, sem `pip install`.
+**Fato durável em markdown, uma porta de escrita, sem stack.** Um arquivo por fato, um mapa vivo,
+recall por lente. Só biblioteca padrão do Python (3.9+): sem banco, sem serviço, sem `pip install`.
+
+Não é um diário automático da sessão. É o lugar em que um fato tem de entrar por uma porta (recusa
+segredo, quase-duplicata, referência vazia) e sair como um `.md` que o `git log` explica.
+
+## O que é, o que não é
+
+| quer | use | não use memoro |
+|---|---|---|
+| "este repo usa pnpm", um jeito só, recusa se vier podre | **memoro** | AGENTS.md (cabe no contexto e dois agentes inventam duas regras) |
+| mapa do que o agente sabe, em arquivos | **memoro** | Obsidian, se o humano é quem edita o dia todo |
+| capturar sozinho o que aconteceu na sessão | [claude-mem](https://github.com/thedotmack/claude-mem) | memoro não tem hook de sessão |
+| lembrar o cliente de um produto, com LLM | [Mem0](https://docs.mem0.ai/) | memoro não extrai fato de chat |
+| o teste prova que o patch conserta | [erratum](https://github.com/victorandraad/erratum) | memoro não é ledger de erro |
+
+## Instalar
+
+Python 3.9+, Unix (Linux, macOS, WSL). A tranca usa `fcntl`.
+
+```sh
+git clone https://github.com/victorandraad/memoro.git
+cd memoro
+export PYTHONPATH="$PWD"
+python3 -m memoro init          # cria ~/memoro; mude com MEMORO_HOME=/outro/lugar
+python3 -m unittest
+```
+
+Comando global (opcional):
+
+```sh
+pipx install git+https://github.com/victorandraad/memoro.git
+```
+
+## Contribuir
+
+PRs são bem-vindos. Teste que falha primeiro. Fixture sempre fictícia (`casa`, `estudo`, `hobby`).
+
+```sh
+python3 -m unittest
+```
+
+O que ajuda: um caso em que a porta deixou passar duplicata, um `doutor` mudo, um recall que
+carregou demais. Detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Licença
+
+[GPL-3.0-or-later](LICENSE). Pode usar, modificar e distribuir. Se distribuir um derivado, o código
+dele também fica sob a GPL: a ideia continua pública. Código de terceiro (mapa) em
+[LICENCAS-DE-TERCEIROS.md](LICENCAS-DE-TERCEIROS.md).
 
 ![mapa de uma memória fictícia: cinco áreas, subáreas, heranças e duas referências pendentes](docs/img/mapa.png)
 
@@ -13,14 +60,6 @@ python3 -m memoro mapa --servir      # http://127.0.0.1:8765, regenera quando um
 Cor é área; tracejado vermelho é referência pendente, pontilhado âmbar é ambígua; clique num fato
 pra ver de quem ele herda e quem herda dele. Um `index.html` só, abre offline. Detalhes em
 [docs/mapa.md](docs/mapa.md). O dado da imagem é fictício (`demo/`).
-
-## Rodar sem instalar
-
-```sh
-git clone <este repo> memoro && cd memoro
-export PYTHONPATH="$PWD"
-python3 -m memoro init          # cria ~/memoro; mude com MEMORO_HOME=/outro/lugar
-```
 
 ## Os cinco comandos do dia a dia
 
@@ -175,5 +214,5 @@ $MEMORO_HOME/            (padrão: ~/memoro)
 python3 -m unittest
 ```
 
-Veja [CONTRIBUTING.md](CONTRIBUTING.md). Licença MIT; código de terceiro em
+Veja [CONTRIBUTING.md](CONTRIBUTING.md). Licença [GPL-3.0-or-later](LICENSE); código de terceiro em
 [LICENCAS-DE-TERCEIROS.md](LICENCAS-DE-TERCEIROS.md).

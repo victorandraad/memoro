@@ -7,7 +7,7 @@ name = "memoro"
 version = "0.1.0"
 description = "Memória em arquivos markdown com uma única porta de escrita, id por área e recall por lente."
 readme = "README.md"
-license = { text = "MIT" }
+license = { file = "LICENSE" }
 requires-python = ">=3.9"
 dependencies = []
 
