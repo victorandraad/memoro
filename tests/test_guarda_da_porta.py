@@ -71,6 +71,10 @@ class TesteGuarda(ComRaiz):
         (self.fora / "solto.md").symlink_to(self.raiz / "areas" / "casa" / "rotina.md")
         self.assertEqual(self.rodar(self.payload(self.fora / "solto.md"))[0], 2)
 
+    def test_symlink_de_dentro_de_areas_pra_fora_tambem_e_negado(self):
+        (self.raiz / "areas" / "casa" / "escapa.md").symlink_to(self.fora / "alvo.md")
+        self.assertEqual(self.rodar(self.payload(self.raiz / "areas" / "casa" / "escapa.md"))[0], 2)
+
     def test_memoro_home_que_e_symlink(self):
         (self.fora / "casa-do-memoro").symlink_to(self.raiz, target_is_directory=True)
         codigo, _ = self.rodar(self.payload(self.raiz / "areas" / "casa" / "a.md"), casa=str(self.fora / "casa-do-memoro"))

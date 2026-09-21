@@ -238,6 +238,9 @@ class ServidorDoMapa:
                 else:
                     arquivo = mapa._saida / "index.html"
                     tipo = "text/html; charset=utf-8"
+                if arquivo.is_symlink() or mapa._saida.is_symlink() or not arquivo.is_file():
+                    self.send_error(404, "nao encontrado")
+                    return
                 corpo = arquivo.read_bytes()
                 etag = '"%s"' % hashlib.sha256(corpo).hexdigest()
                 if self.headers.get("If-None-Match") == etag:

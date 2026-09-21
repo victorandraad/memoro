@@ -88,4 +88,7 @@ class DiarioDeEventos:
         for campo in _CAMPOS:
             if campo not in dados:
                 return None
+            # tipo errado é linha corrompida: senão ok="sim" passa por evento bom e o doutor dá falso limpo
+            if not isinstance(dados[campo], bool if campo == "ok" else str):
+                return None
         return Evento(**{campo: dados[campo] for campo in _CAMPOS})

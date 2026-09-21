@@ -102,6 +102,15 @@ class TesteExame(ComPorta):
         self.assertEqual(len(achados), 2)
         self.assertTrue(all("linha" in a.detalhe for a in achados))
 
+    def test_linha_com_campo_de_tipo_errado_conta_como_corrompida(self):
+        bom = json.loads((self.raiz / "eventos.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        with (self.raiz / "eventos.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps(dict(bom, ok="sim")) + "\n")
+            f.write(json.dumps(dict(bom, hash_do_conteudo=None)) + "\n")
+            f.write(json.dumps(dict(bom, id=["casa/rotina"])) + "\n")
+        achados = [a for a in Doutor(self.raiz).examinar() if a.tipo == "diario-corrompido"]
+        self.assertEqual(len(achados), 3)
+
     def test_lixeira_e_pastas_ocultas_ficam_fora(self):
         self.cli("rm", "estudo/leituras", "--motivo", "fila zerada")
         (self.raiz / "areas" / ".obsidian").mkdir()

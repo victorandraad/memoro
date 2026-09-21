@@ -90,6 +90,13 @@ class TesteServidor(unittest.TestCase):
             self.assertNotIn(b"NAO-SERVIR", bruto, caminho)
             self.assertNotIn(b"root:", bruto, caminho)
 
+    def test_symlink_na_saida_nao_e_servido(self):
+        (self.mem.saida / "index.html").unlink()
+        (self.mem.saida / "index.html").symlink_to(self.mem.saida.parent / "fora.txt")
+        resposta, corpo = self.pedir("/")
+        self.assertEqual(resposta.status, 404)
+        self.assertNotIn(b"NAO-SERVIR", corpo)
+
     def test_etag_devolve_304(self):
         resposta, _ = self.pedir("/data.json")
         etag = resposta.getheader("ETag")

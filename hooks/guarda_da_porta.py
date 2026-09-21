@@ -32,9 +32,12 @@ class GuardaDaPorta:
             if not isinstance(cwd, str):
                 return None
             caminho = os.path.join(cwd, caminho)
-        alvo = os.path.realpath(caminho)
-        areas = os.path.realpath(os.path.join(self._raiz(), "areas"))
-        if not self._mesmo_prefixo(alvo, areas):
+        # os dois olhares: o real (atalho de fora pra dentro) e o lexical (atalho de dentro pra fora)
+        areas_lexical = os.path.abspath(os.path.join(self._raiz(), "areas"))
+        areas = os.path.realpath(areas_lexical)
+        dentro = (self._mesmo_prefixo(os.path.realpath(caminho), areas)
+                  or self._mesmo_prefixo(os.path.abspath(caminho), areas_lexical))
+        if not dentro:
             return None
         return (
             "escrita direta em áreas da memória recusada: "
