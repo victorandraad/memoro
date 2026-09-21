@@ -47,6 +47,11 @@ class TestCliEscrita(ComRaiz):
         self.assertEqual(self.cli("update", "fogao", "--corpo", entrada="tres\n")[0], 0)
         self.assertEqual(json.loads(self.cli("show", "fogao", "--json")[1])["corpo"], "tres\n")
 
+    def test_aliases_em_ingles(self):
+        self.assertEqual(self.cli("map", "--json")[0], 0)
+        self.assertEqual(self.cli("doctor")[0], 0)
+        self.assertEqual(self.cli("purge", "--dias", "30")[0], 0)
+
     def test_rm_purga_e_log(self):
         self.cli("add", "casa", "fogao", "--desc", "d", entrada="c\n")
         self.assertEqual(self.cli("rm", "casa/fogao")[0], 1)

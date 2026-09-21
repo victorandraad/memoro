@@ -1,42 +1,23 @@
-# Contribuindo
+# Contributing
 
-PRs abertos. Python 3.9+, só biblioteca padrão. Teste que falha primeiro, depois a implementação.
-Licença [GPL-3.0-or-later](LICENSE): o derivado distribuído continua GPL.
+PRs welcome. Python 3.9+, standard library only. Failing test first, then the implementation.
+License [GPL-3.0](LICENSE): distributed derivatives stay GPL.
+
+Portuguese: [CONTRIBUTING.pt.md](CONTRIBUTING.pt.md).
 
 ```sh
 python -m unittest
 ```
 
-Cada teste monta o seu repositório de fatos num diretório temporário: nenhum teste lê nem escreve
-fora dele. Classes recebem dependência pelo construtor, sem estado global.
+Each test builds its own fact repo in a temp directory. Nothing reads or writes outside it.
+Classes take dependencies in the constructor; no global state.
 
-## Privacidade do repo
+## Repo privacy
 
-`tests/test_privacidade.py` varre todo arquivo versionado (menos `LICENSE`, que leva o nome do
-titular por obrigação legal) e reprova:
+`tests/test_privacidade.py` walks every versioned file (except `LICENSE`) and fails on em dashes,
+generic identifying regexes, and private maintainer tokens stored only as sha256.
 
-- travessão em qualquer arquivo (no código, só via `chr(0x2014)`);
-- padrões genéricos por regex: caminho na home do superusuário, domínio interno, e-mail de
-  provedor gratuito, id de card;
-- **termos privados de quem mantém o fork**, guardados só como sha256. O teste nunca contém o termo,
-  nem em pedaços: quem lê o arquivo não descobre o que está sendo protegido.
+Fixtures and examples are always fictional: areas `casa`, `estudo`, `hobby`, `trabalho` and made-up
+facts. No real person, product, repo or host names.
 
-Fixture e exemplo são sempre fictícios: áreas `casa`, `estudo`, `hobby`, `trabalho` e fatos
-inventados. Nada de nome de pessoa, produto, repo ou host.
-
-### Acrescentar um termo privado
-
-O arquivo é quebrado em tokens `[a-z0-9]+` minúsculos, e a varredura compara o hash de cada token
-e de cada junção de 2 e 3 tokens vizinhos. Então o termo entra **minúsculo e sem separador**:
-`Meu-Produto` vira `meuproduto`.
-
-```sh
-python3 -c "import hashlib,sys; print(hashlib.sha256(sys.argv[1].encode()).hexdigest())" meuproduto
-```
-
-Cole o hash em `HASHES_PROIBIDOS`, sem comentário dizendo o que ele é. Rode o comando num terminal
-cujo histórico não vá pro repo. Se o teste acusar, a mensagem mostra arquivo, linha e o prefixo do
-hash, nunca o termo.
-
-Limite conhecido: palavra que só **contém** o termo (`meuprodutos`) não é acusada, e junção
-`camelCase` também não. Registre as variações que importam como hashes separados.
+How to add a private term: see [CONTRIBUTING.pt.md](CONTRIBUTING.pt.md).

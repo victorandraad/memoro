@@ -28,6 +28,7 @@ def _csv(valor):
 
 class Comando(ABC):
     nome = ""
+    aliases = ()
 
     def __init__(self, cli):
         self._cli = cli
@@ -287,6 +288,7 @@ class ComandoRm(Comando):
 
 class ComandoPurga(Comando):
     nome = "purga"
+    aliases = ("purge",)
 
     def configurar(self, subparser):
         subparser.add_argument("--dias", type=int, default=30)
@@ -310,6 +312,7 @@ class ComandoPurga(Comando):
 
 class ComandoDoMapa(Comando):
     nome = "mapa"
+    aliases = ("map",)
 
     def configurar(self, subparser):
         subparser.add_argument("--titulo", default="Memória")
@@ -335,6 +338,7 @@ class ComandoDoMapa(Comando):
 
 class ComandoDoutor(Comando):
     nome = "doutor"
+    aliases = ("doctor",)
 
     def configurar(self, subparser):
         subparser.add_argument("--adotar", default=None)
@@ -364,6 +368,7 @@ class ComandoDoutor(Comando):
 
 class ComandoAdotarTudo(Comando):
     nome = "adotar-tudo"
+    aliases = ("adopt-all",)
 
     def configurar(self, subparser):
         subparser.add_argument("--motivo", required=True)
@@ -434,7 +439,10 @@ class Cli:
         analisador = argparse.ArgumentParser(prog="memoro")
         subs = analisador.add_subparsers(dest="comando", required=True)
         for comando in self._comandos:
-            sub = subs.add_parser(comando.nome)
+            extras = {}
+            if comando.aliases:
+                extras["aliases"] = list(comando.aliases)
+            sub = subs.add_parser(comando.nome, **extras)
             comando.configurar(sub)
             sub.add_argument("--json", action="store_true")
             sub.set_defaults(_comando=comando)

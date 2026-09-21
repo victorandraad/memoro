@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "memoro"
 version = "0.1.0"
-description = "Memória em arquivos markdown com uma única porta de escrita, id por área e recall por lente."
+description = "Markdown facts with a single write gate, ids per area, and recall by lens."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.9"
