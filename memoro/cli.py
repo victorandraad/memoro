@@ -369,23 +369,19 @@ class ComandoAdotarTudo(Comando):
         subparser.add_argument("--motivo", required=True)
 
     def executar(self, args):
-        porta = self._porta()
         tipos = ("sem-evento", "alterado-fora-da-porta", "frontmatter-invalido")
         vistos = set()
-        adotados = 0
-        falhou = False
+        refs = []
         for achado in Doutor(self._cli.raiz).examinar():
             if achado.tipo not in tipos or achado.id in vistos:
                 continue
             vistos.add(achado.id)
-            try:
-                porta.adotar(achado.id, args.motivo)
-                adotados += 1
-            except Recusa as exc:
-                falhou = True
-                self._cli.erro.write("%s: %s\n" % (achado.id, exc))
-        self._cli.saida.write("%d adotados\n" % adotados)
-        return 1 if falhou else 0
+            refs.append(achado.id)
+        adotados, recusados = self._porta().adotar_varios(refs, args.motivo)
+        for ident, mensagem in recusados:
+            self._cli.erro.write("%s: %s\n" % (ident, mensagem))
+        self._cli.saida.write("%d adotados\n" % len(adotados))
+        return 1 if recusados else 0
 
 
 class ComandoLog(Comando):
