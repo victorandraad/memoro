@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memoro"
+version = "0.1.0"
+description = "Memória em arquivos markdown com uma única porta de escrita, id por área e recall por lente."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+memoro = "memoro.cli:main"
+
+[tool.setuptools]
+packages = ["memoro"]

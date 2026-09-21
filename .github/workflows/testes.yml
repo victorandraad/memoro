@@ -1,0 +1,24 @@
+name: testes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Identidade do git para os testes que commitam
+        run: |
+          git config --global user.email "ci@example.test"
+          git config --global user.name "ci"
+      - name: Testes
+        run: python -m unittest -v
