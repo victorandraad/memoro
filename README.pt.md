@@ -2,6 +2,8 @@
 
 # memoro
 
+![428 tentativas reais de escrita voam até a porta; 104 são recusadas e caem numa pilha vermelha, o resto vira 8 pilhas de áreas](docs/img/memoro.webp)
+
 **Fato durável em markdown, uma porta de escrita, sem stack.** Um arquivo por fato, um mapa vivo,
 recall por lente. Só biblioteca padrão do Python (3.9+): sem banco, sem serviço, sem `pip install`.
 
