@@ -232,6 +232,36 @@ class TestGit(ComPorta):
         self.assertTrue(any("sem commit" in a for a in r.avisos))
         self.assertEqual([(e.op, e.id, e.ok) for e in self.eventos()][-1], ("add", "casa/fogao", True))
 
+    def test_rm_de_fato_de_antes_do_git_commita_mesmo_assim(self):
+        # achado do codex: git add de caminho apagado e nunca rastreado derrubava o commit
+        self.porta.add("casa", "fogao", "d", "c\n")
+        self.iniciar_git()
+        r = self.porta.rm("casa/fogao", "teste")
+        self.assertEqual(r.avisos, ())
+        self.assertEqual(self.git("log", "-1", "--format=%s"), "memoro rm casa/fogao\n")
+
+    def test_purga_registra_e_commita_um_por_um(self):
+        # achado do codex: purga apagava todos antes do primeiro evento; falha no meio deixava apagado sem rastro
+        from pathlib import Path
+        from unittest import mock
+        self.iniciar_git()
+        self.porta.add("casa", "rotina", "a de casa", "c\n")
+        self.porta.add("trabalho", "rotina", "a do trabalho", "c\n")
+        self.porta.rm("casa/rotina", "velho")
+        self.porta.rm("trabalho/rotina", "velho")
+        self.relogio.agora += timedelta(days=40)
+        original, chamadas = Path.unlink, []
+
+        def unlink(caminho, *a, **kw):
+            chamadas.append(caminho)
+            if len(chamadas) == 2:
+                raise OSError("disco cheio")
+            return original(caminho, *a, **kw)
+
+        with mock.patch.object(Path, "unlink", unlink), self.assertRaises(OSError):
+            self.porta.purga(30)
+        self.assertEqual(self.git("log", "-1", "--format=%s"), "memoro purga casa/rotina\n")
+
     def test_raiz_dentro_de_outro_repo_nao_commita_no_repo_de_fora(self):
         fora = self.raiz.parent
         subprocess.run(["git", "-C", str(fora), "init", "-q"], check=True)
