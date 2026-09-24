@@ -46,8 +46,21 @@ echo "auto-pay, due on the 10th" | python3 -m memoro add casa conta-de-luz --des
 python3 -m memoro recall --lens dia-a-dia   # recall --list-lenses shows every lens and its scopes
 python3 -m memoro ls casa
 python3 -m memoro show casa/conta-de-luz
-python3 -m memoro rm casa/conta-de-luz --motivo "moved house"
+python3 -m memoro rm casa/conta-de-luz --reason "moved house"
 ```
+
+The gate says no out loud, and says what to do instead:
+
+```text
+$ echo "x" | python3 -m memoro add casa conta-da-luz --desc "power bill"
+refused: similar to casa/conta-de-luz, use update instead or pass --new-anyway
+$ echo "ghp_..." | python3 -m memoro add casa router --desc "wifi"
+refused: secret of type github-token in body, line 1
+```
+
+Output is English. `MEMORO_LANG=pt` switches every message to Portuguese; commands and flags work in
+both (`doutor`/`doctor`, `--motivo`/`--reason`, `--novo-mesmo-assim`/`--new-anyway`). Scripts should
+read `--json`, whose keys never change with the language.
 
 Also: `map` / `mapa`, `doctor` / `doutor`, `adopt-all` / `adotar-tudo`, `log`, `purge` / `purga`.
 Every command accepts `--json`. Exit `0` ok, `1` the gate refused or the doctor found something,

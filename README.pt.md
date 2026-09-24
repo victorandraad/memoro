@@ -89,6 +89,10 @@ E ainda: `mapa`, `doutor`, `adotar-tudo`, `log [--id X] [--recusas] [--desde AAA
 `purga [--dias 30]`. Todo comando aceita `--json`. Saída `0` deu certo, `1` a porta recusou ou o
 doutor achou algo (o motivo vai pro stderr e pro diário), `2` uso errado.
 
+A saída sai em inglês por padrão. `MEMORO_LANG=pt` põe toda mensagem em português (recusas, recall,
+doutor, help). Comandos e flags valem nas duas línguas (`--motivo`/`--reason`,
+`--novo-mesmo-assim`/`--new-anyway`). Script lê `--json`: as chaves não mudam com a língua.
+
 ## A porta única, e por quê
 
 Memória que qualquer processo edita do jeito que quer apodrece em silêncio: fato duplicado, segredo
