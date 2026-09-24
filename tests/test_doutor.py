@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 
 from memoro.diario import DiarioDeEventos
 from memoro.doutor import Doutor
@@ -125,6 +126,53 @@ class TesteExame(ComPorta):
         self.assertEqual(dados["limpo"], False)
         self.assertEqual([(a["tipo"], a["id"]) for a in dados["achados"]], [("evento-sem-arquivo", "estudo/leituras")])
         self.assertTrue(dados["achados"][0]["detalhe"])
+
+
+class TesteGitContraDiario(ComRaiz):
+    """D7: todo evento de escrita ok tem o commit `memoro <op> <id>` e vice-versa."""
+
+    def setUp(self):
+        super().setUp()
+        self.assertEqual(self.cli("init")[0], 0)
+        self.git("init", "-q")
+        self.git("config", "user.email", "teste@example.test")
+        self.git("config", "user.name", "teste")
+        (self.raiz / "areas" / "estudo").mkdir(parents=True, exist_ok=True)
+        self.cli("adotar-tudo", "--motivo", "estado inicial do teste")
+        for area, nome, desc in (("casa", "rotina", "rotina semanal da casa"), ("estudo", "leituras", "fila de livros")):
+            self.assertEqual(self.cli("add", area, nome, "--desc", desc, entrada="corpo\n")[0], 0)
+
+    def git(self, *args):
+        return subprocess.run(["git", "-C", str(self.raiz)] + list(args), capture_output=True, text=True, check=True).stdout
+
+    def tipos(self):
+        return sorted((a.tipo, a.id) for a in Doutor(self.raiz).examinar())
+
+    def test_escritas_pela_porta_batem_com_o_git(self):
+        self.cli("update", "casa/rotina", "--desc", "rotina quinzenal da casa")
+        self.cli("rm", "estudo/leituras", "--motivo", "fila zerada")
+        self.escrever("casa", "pia", desc="pia da cozinha")
+        self.escrever("casa", "forno", desc="forno a gás")
+        self.assertEqual(self.cli("adotar-tudo", "--motivo", "lote")[0], 0)
+        self.assertEqual(self.tipos(), [])
+
+    def test_commit_forjado_sem_evento(self):
+        self.git("commit", "-q", "--allow-empty", "-m", "memoro add casa/fantasma")
+        self.assertEqual(self.tipos(), [("commit-sem-evento", "casa/fantasma")])
+        self.assertEqual(self.cli("doutor")[0], 1)
+
+    def test_commit_apagado_deixa_evento_sem_commit(self):
+        self.git("reset", "-q", "--soft", "HEAD~1")
+        self.git("commit", "-q", "-m", "outra coisa")
+        self.assertEqual(self.tipos(), [("evento-sem-commit", "estudo/leituras")])
+        self.assertEqual(self.cli("doutor")[0], 1)
+
+    def test_commit_que_falhou_na_porta_aparece_como_evento_sem_commit(self):
+        gancho = self.raiz / ".git" / "hooks" / "pre-commit"
+        gancho.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+        gancho.chmod(0o755)
+        self.cli("add", "casa", "fogao", "--desc", "fogão de quatro bocas", entrada="corpo\n")
+        self.assertEqual(self.tipos(), [("evento-sem-commit", "casa/fogao")])
 
 
 class TesteAdocao(ComPorta):
