@@ -7,6 +7,8 @@ que o mapa embute no `index.html` pra funcionar offline.
 
 - Arquivo: `memoro/d3-hierarchy.min.js` (build UMD oficial, código sem alteração; o cabeçalho leva o
   aviso de licença completo).
+- sha256: `ad87c67d0ffc5fb76ececb848c79082d752ee928bb7b3d30fada14b0c39cb695` (conferido por
+  `tests/test_terceiros.py`; troca de versão atualiza os dois).
 - Autor: Mike Bostock. Copyright 2010-2021.
 - Licença: ISC.
 
