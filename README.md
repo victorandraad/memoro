@@ -1,5 +1,7 @@
 # memoro
 
+![428 real write attempts fly at the gate; 104 are refused and pile up in red, the rest stack into 8 areas](docs/img/memoro.webp)
+
 **Durable facts in markdown, one write gate, no stack.** One file per fact, a live map, recall by
 lens. Python 3.9+ standard library only: no database, no service, no `pip install` required.
 
