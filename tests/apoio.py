@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -32,5 +33,11 @@ class ComRaiz(unittest.TestCase):
         from memoro.cli import Cli
         saida, erro = io.StringIO(), io.StringIO()
         codigo = Cli(entrada=io.StringIO(entrada), saida=saida, erro=erro,
-                     ambiente={"MEMORO_HOME": str(self.raiz), "USER": "teste"}).executar(list(argv))
+                     ambiente=self._ambiente()).executar(list(argv))
         return codigo, saida.getvalue(), erro.getvalue()
+
+    def _ambiente(self):
+        ambiente = {"MEMORO_HOME": str(self.raiz), "USER": "teste"}
+        if "MEMORO_LANG" in os.environ:
+            ambiente["MEMORO_LANG"] = os.environ["MEMORO_LANG"]
+        return ambiente
