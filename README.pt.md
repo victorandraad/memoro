@@ -147,6 +147,7 @@ Quando alguém cita só `rotina` (`uses: [rotina]` ou `[[rotina]]` no corpo):
 do escopo, os filhos e o que eles herdam por `uses` (até `--saltos N`), **dizendo por que cada um
 entrou**. `MEMORO_RECALL_CAP=40` põe um teto; o que ficou de fora é contado na saída. É o que impede
 o agente de carregar a memória inteira pra responder uma pergunta.
+`recall --list-lenses` (ou `--json`) lista as lentes e seus escopos, pro agente descobrir qual pedir.
 
 ## Usar com agente de IA
 

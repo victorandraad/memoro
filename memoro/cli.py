@@ -168,10 +168,13 @@ class ComandoRecall(Comando):
         subparser.add_argument("--lens", default=None)
         subparser.add_argument("--scope", default=None)
         subparser.add_argument("--saltos", type=int, default=1)
+        subparser.add_argument("--list-lenses", action="store_true")
 
     def executar(self, args):
         repo = RepositorioDeFatos(self._cli.raiz)
         lentes = Lentes(self._cli.raiz / "lentes.json", repo.areas())
+        if args.list_lenses:
+            return self._listar_lentes(lentes, args)
         escopos = None
         if args.lens is not None:
             escopos = list(lentes.escopos(args.lens))
@@ -192,6 +195,7 @@ class ComandoRecall(Comando):
                             "area": item.fato.area,
                             "descricao": item.fato.descricao,
                             "motivo": item.motivo,
+                            "corpo": item.fato.corpo,
                         }
                         for item in resultado.itens
                     ],
@@ -216,6 +220,16 @@ class ComandoRecall(Comando):
             if item.motivo != "escopo":
                 linha += " (%s)" % item.motivo
             self._cli.saida.write("%s\n" % linha)
+        return 0
+
+    def _listar_lentes(self, lentes, args):
+        cruas = sorted(lentes.cruas().items())
+        if args.json:
+            json.dump([{"nome": n, "escopos": e} for n, e in cruas], self._cli.saida, ensure_ascii=False)
+            self._cli.saida.write("\n")
+        else:
+            for nome, escopos in cruas:
+                self._cli.saida.write("%s\t%s\n" % (nome, ", ".join(escopos)))
         return 0
 
     def _teto(self):

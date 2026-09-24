@@ -43,7 +43,7 @@ pipx install git+https://github.com/victorandraad/memoro.git
 
 ```sh
 echo "auto-pay, due on the 10th" | python3 -m memoro add casa conta-de-luz --desc "energy bill"
-python3 -m memoro recall --lens dia-a-dia
+python3 -m memoro recall --lens dia-a-dia   # recall --list-lenses shows every lens and its scopes
 python3 -m memoro ls casa
 python3 -m memoro show casa/conta-de-luz
 python3 -m memoro rm casa/conta-de-luz --motivo "moved house"
