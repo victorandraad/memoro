@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from contextvars import ContextVar
 
 MENSAGENS = {
     # cli
@@ -90,12 +91,14 @@ TIPOS_EN = {
     "commit-sem-evento": "commit-without-event",
 }
 
-# a Cli recebe o ambiente injetado; ela sobrescreve aqui durante a execução
-sobrescrita = None
+# a Cli recebe o ambiente injetado e sobrescreve aqui durante a execução; por contexto, não global
+sobrescrita = ContextVar("memoro_lang", default=None)
 
 
 def portugues():
-    valor = sobrescrita if sobrescrita is not None else os.environ.get("MEMORO_LANG", "")
+    valor = sobrescrita.get()
+    if valor is None:
+        valor = os.environ.get("MEMORO_LANG", "")
     return valor.strip().lower().startswith("pt")
 
 

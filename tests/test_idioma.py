@@ -108,6 +108,35 @@ class TestIngles(_Base):
         self.assertIn("--reason", self.cli("rm", "--help")[1])
 
 
+    def test_flags_inglesas_do_log(self):
+        self.cli("rm", "casa/conta-de-luz")
+        codigo, saida, _ = self.cli("log", "--refusals", "--user", "teste", "--since", "2000-01-01")
+        self.assertEqual(codigo, 0)
+        self.assertIn("rm requires --reason", saida)
+
+    def test_idioma_por_contexto_nao_vaza_entre_threads(self):
+        import threading
+
+        from memoro import mensagens
+        visto = []
+        pronto, solta = threading.Event(), threading.Event()
+
+        def em_pt():
+            ficha = mensagens.sobrescrita.set("pt")
+            pronto.set()
+            solta.wait(5)
+            visto.append(mensagens.t("limpo"))
+            mensagens.sobrescrita.reset(ficha)
+
+        fio = threading.Thread(target=em_pt)
+        fio.start()
+        pronto.wait(5)
+        self.assertEqual(mensagens.t("limpo"), "clean")
+        solta.set()
+        fio.join()
+        self.assertEqual(visto, ["limpo"])
+
+
 class TestPortugues(_Base):
     IDIOMA = "pt"
 

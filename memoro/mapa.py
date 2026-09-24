@@ -276,9 +276,9 @@ class ComandoMapa:
         self._raiz = Path(raiz_dos_fatos)
 
     def configurar(self, parser) -> None:
-        parser.add_argument("--saida", default=None)
-        parser.add_argument("--servir", nargs="?", const=8765, type=int, default=None)
-        parser.add_argument("--abrir", action="store_true")
+        parser.add_argument("--out", "--saida", dest="saida", default=None)
+        parser.add_argument("--serve", "--servir", dest="servir", nargs="?", const=8765, type=int, default=None)
+        parser.add_argument("--open", "--abrir", dest="abrir", action="store_true")
 
     def executar(self, args) -> int:
         saida = Path(args.saida) if args.saida else self._raiz / ".memoro" / "mapa"

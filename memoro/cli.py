@@ -279,8 +279,8 @@ class ComandoUpdate(Comando):
         subparser.add_argument("--desc", default=None)
         subparser.add_argument("--uses", default=None)
         subparser.add_argument("--scope", default=None)
-        subparser.add_argument("--corpo", action="store_true")
-        subparser.add_argument("--anexar", action="store_true")
+        subparser.add_argument("--body", "--corpo", dest="corpo", action="store_true")
+        subparser.add_argument("--append", "--anexar", dest="anexar", action="store_true")
 
     def executar(self, args):
         texto = self._ler() if args.corpo or args.anexar else None
@@ -311,7 +311,7 @@ class ComandoPurga(Comando):
     aliases = ("purge",)
 
     def configurar(self, subparser):
-        subparser.add_argument("--dias", type=int, default=30)
+        subparser.add_argument("--days", "--dias", dest="dias", type=int, default=30)
 
     def executar(self, args):
         caminhos = self._porta().purga(args.dias)
@@ -335,7 +335,7 @@ class ComandoDoMapa(Comando):
     aliases = ("map",)
 
     def configurar(self, subparser):
-        subparser.add_argument("--titulo", default=t("titulo-do-mapa"))
+        subparser.add_argument("--title", "--titulo", dest="titulo", default=t("titulo-do-mapa"))
         ComandoMapa(lambda: None, self._cli.raiz).configurar(subparser)
 
     def executar(self, args):
@@ -414,9 +414,9 @@ class ComandoLog(Comando):
 
     def configurar(self, subparser):
         subparser.add_argument("--id", default=None)
-        subparser.add_argument("--usuario", default=None)
-        subparser.add_argument("--desde", default=None)
-        subparser.add_argument("--recusas", action="store_true")
+        subparser.add_argument("--user", "--usuario", dest="usuario", default=None)
+        subparser.add_argument("--since", "--desde", dest="desde", default=None)
+        subparser.add_argument("--refusals", "--recusas", dest="recusas", action="store_true")
 
     def executar(self, args):
         eventos = DiarioDeEventos(self._cli.raiz / "eventos.jsonl").ler(
@@ -456,12 +456,11 @@ class Cli:
         return Path(self.ambiente["HOME"]) / "memoro"
 
     def executar(self, argv):
-        anterior = mensagens.sobrescrita
-        mensagens.sobrescrita = self.ambiente.get("MEMORO_LANG", "")
+        ficha = mensagens.sobrescrita.set(self.ambiente.get("MEMORO_LANG", ""))
         try:
             return self._executar(argv)
         finally:
-            mensagens.sobrescrita = anterior
+            mensagens.sobrescrita.reset(ficha)
 
     def _executar(self, argv):
         analisador = argparse.ArgumentParser(prog="memoro", description=t("ajuda-memoro"))
