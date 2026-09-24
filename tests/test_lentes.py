@@ -115,7 +115,7 @@ class TestCliRecall(ComRecall):
         self.assertEqual(codigo, 0)
         self.assertEqual([(i["id"], i["motivo"]) for i in d["itens"]],
                          [("casa/cozinha/forno", "escopo"), ("estudo/quimica", "escopo")])
-        self.assertEqual(sorted(d["itens"][0]), ["area", "descricao", "id", "motivo", "nome"])
+        self.assertEqual(sorted(d["itens"][0]), ["area", "corpo", "descricao", "id", "motivo", "nome"])
         self.assertEqual(d["cortados"], 0)
 
     def test_lente_vazia_e_zero_de_proposito(self):
