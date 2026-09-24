@@ -101,7 +101,10 @@ colado, referência pro vazio. Aqui **toda escrita passa por uma porta**, que:
 - **registra no diário** (`eventos.jsonl`, append-only) cada operação com o hash do conteúdo,
   **inclusive as recusas**: dá pra ver o que tentaram gravar e por que não entrou;
 - **não apaga**: `rm` move pra `areas/_lixeira/` com motivo e data; `purga` apaga o que venceu;
-- **commita**, se a raiz for um repo git: um commit por escrita, só do que tocou.
+- **commita**, se a raiz for um repo git: um commit por escrita, só do que tocou, com o evento do
+  diário no mesmo commit (o evento é gravado antes; commit que falha deixa o evento e o doutor acusa).
+
+O formato do fato e cada recusa, com exemplos que a suíte confere: [SPEC.md](SPEC.md).
 
 ### O doutor: porta única sem usuário unix dedicado
 
@@ -114,7 +117,10 @@ python3 -m memoro doutor [--json]     # exit 0 limpo, 1 com achado
 
 Todo `.md` de `areas/` tem de bater com o hash do último evento ok daquele id. O doutor acusa
 (1) arquivo alterado fora da porta, (2) arquivo sem evento de criação, (3) evento sem arquivo,
-(4) frontmatter inválido, (5) referência pendente ou ambígua, (6) linha corrompida no diário.
+(4) frontmatter inválido, (5) referência pendente ou ambígua, (6) linha corrompida no diário,
+(7) git contra diário: se a raiz é repo git, todo evento de escrita ok tem o commit
+`memoro <op> <id>` e todo commit desses tem o evento (`evento-sem-commit`, `commit-sem-evento`).
+Fora de repo git, (7) pula.
 
 Quer editar no editor? Pode, e depois regulariza com motivo (passa pelas mesmas regras da porta e
 vira evento `adocao`):

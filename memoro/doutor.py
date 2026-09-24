@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import collections
 import hashlib
 import os
+import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,6 +16,7 @@ from memoro.grafo import GrafoDeFatos
 
 _OPS_VIVOS = frozenset({"add", "update", "adocao"})
 _OPS_MORTOS = frozenset({"rm", "purga"})
+_COMMIT_CANONICO = re.compile(r"^memoro (add|update|rm|adocao|purga) (\S+)$", re.M)
 
 
 @dataclass(frozen=True)
@@ -66,8 +70,38 @@ class Doutor:
             if ambiguos:
                 alvos = ", ".join(a.alvo for a in ambiguos)
                 achados.append(Achado("ambiguo", no.id, alvos))
+        achados.extend(self._git_contra_diario())
         achados.sort(key=lambda a: (a.tipo, a.id, a.detalhe))
         return achados
+
+    def _git_contra_diario(self):
+        """D7: cada evento de escrita ok tem um commit `memoro <op> <id>` e vice-versa."""
+        commits = self._commits_canonicos()
+        if commits is None:
+            return []
+        eventos = collections.Counter(
+            (e.op, e.id) for e in self._diario.ler() if e.ok and e.op in _OPS_VIVOS | _OPS_MORTOS
+        )
+        achados = []
+        for (op, ident), n in (eventos - commits).items():
+            achados.extend([Achado("evento-sem-commit", ident, "%s sem commit no git" % op)] * n)
+        for (op, ident), n in (commits - eventos).items():
+            achados.extend([Achado("commit-sem-evento", ident, "commit memoro %s sem evento no diário" % op)] * n)
+        return achados
+
+    def _commits_canonicos(self):
+        """Contagem de (op, id) nas mensagens de commit; None se a raiz não é topo de repo git."""
+        git = ["git", "-C", str(self._raiz)]
+        try:
+            topo = subprocess.run(git + ["rev-parse", "--show-toplevel"], capture_output=True, text=True)
+            if topo.returncode != 0 or os.path.realpath(topo.stdout.strip()) != os.path.realpath(str(self._raiz)):
+                return None
+            log = subprocess.run(git + ["log", "--format=%B"], capture_output=True, text=True)
+        except OSError:
+            return None
+        # repo sem commit nenhum: log falha, e isso vale como lista vazia
+        texto = log.stdout if log.returncode == 0 else ""
+        return collections.Counter(_COMMIT_CANONICO.findall(texto))
 
     def _arquivos_md(self):
         areas = self._raiz / "areas"

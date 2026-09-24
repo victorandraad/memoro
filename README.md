@@ -58,6 +58,14 @@ python3 -m memoro map --servir      # http://127.0.0.1:8765
 python3 -m memoro doctor            # exit 0 clean, 1 finding
 ```
 
+The doctor checks every `.md` against the event log (`eventos.jsonl`): file changed outside the
+gate, file with no creation event, event with no file, invalid frontmatter, pending or ambiguous
+reference, corrupt log line, and (D7) git against the log: when the root is a git repo, every ok
+write event has its `memoro <op> <id>` commit and every such commit has its event. Outside git, D7
+is skipped. The gate commits the fact and its event together.
+
+Fact format and every refusal, with examples the test suite checks: [SPEC.md](SPEC.md) (Portuguese).
+
 ## Contributing
 
 PRs welcome. Failing test first. Fixtures are always fictional (`casa`, `estudo`, `hobby`).
