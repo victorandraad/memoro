@@ -137,3 +137,30 @@ class TestCliRecall(ComRecall):
         linhas = saida.getvalue().splitlines()
         self.assertEqual(linhas[0], "# recall: lar (2 fatos, 5 cortados pelo teto)")
         self.assertEqual(len(linhas), 3)
+
+    def test_list_lenses_em_texto_e_json(self):
+        codigo, saida, _ = self.cli("recall", "--list-lenses")
+        self.assertEqual(codigo, 0)
+        self.assertEqual(saida.splitlines(), [
+            "lar\tcasa", "nenhuma\t", "quebrada\tporao", "so-cozinha\tcasa/cozinha"])
+        codigo, saida, _ = self.cli("recall", "--list-lenses", "--json")
+        self.assertEqual(codigo, 0)
+        self.assertEqual(json.loads(saida), [
+            {"nome": "lar", "escopos": ["casa"]}, {"nome": "nenhuma", "escopos": []},
+            {"nome": "quebrada", "escopos": ["porao"]}, {"nome": "so-cozinha", "escopos": ["casa/cozinha"]}])
+
+    def test_json_traz_o_corpo_do_fato(self):
+        _, saida, _ = self.cli("recall", "--scope", "hobby", "--saltos", "0", "--json")
+        itens = {i["id"]: i for i in json.loads(saida)["itens"]}
+        self.assertEqual(itens["trabalho/rotina"]["corpo"], "corpo\n")
+
+    def test_lente_nao_devolve_fato_so_de_outra_lente(self):
+        self.escrever("oficina", "torno", desc="só da oficina")
+        (self.raiz / "lentes.json").write_text(json.dumps({
+            "lar": ["casa"], "oficio": ["oficina"]}), encoding="utf-8")
+        _, saida, _ = self.cli("recall", "--lens", "lar", "--saltos", "3", "--json")
+        ids = [i["id"] for i in json.loads(saida)["itens"]]
+        self.assertIn("casa/fogao", ids)
+        self.assertNotIn("oficina/torno", ids)
+        _, saida, _ = self.cli("recall", "--lens", "oficio", "--json")
+        self.assertEqual([i["id"] for i in json.loads(saida)["itens"]], ["oficina/torno"])
