@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import subprocess
 from datetime import datetime, timedelta, timezone
 
@@ -191,6 +192,45 @@ class TestGit(ComPorta):
         self.assertEqual(self.git("log", "-1", "--format=%an"), "teste\n")  # identidade é a do repo, nunca fixa
         self.assertIn("?? rascunho.txt", self.git("status", "--porcelain"))
         self.assertNotIn("fogao", self.git("status", "--porcelain"))
+
+    def iniciar_git(self):
+        self.git("init", "-q")
+        self.git("config", "user.email", "teste@example.test")
+        self.git("config", "user.name", "teste")
+
+    def test_fato_e_evento_saem_no_mesmo_commit(self):
+        self.iniciar_git()
+        self.porta.add("casa", "fogao", "d", "c\n")
+        self.porta.update("casa/fogao", descricao="d2")
+        self.porta.rm("casa/fogao", "teste")
+        self.relogio.agora += timedelta(days=40)
+        self.porta.purga(30)
+        for rev, op in (("HEAD~3", "add"), ("HEAD~2", "update"), ("HEAD~1", "rm"), ("HEAD", "purga")):
+            self.assertIn("eventos.jsonl", self.git("show", "--name-only", "--format=", rev).split(), rev)
+            ultimo = json.loads(self.git("show", rev + ":eventos.jsonl").splitlines()[-1])
+            self.assertEqual((ultimo["op"], ultimo["id"], ultimo["ok"]), (op, "casa/fogao", True))
+        self.assertNotIn("eventos.jsonl", self.git("status", "--porcelain"))
+
+    def test_adocao_leva_o_diario_no_commit_e_cita_cada_id(self):
+        self.iniciar_git()
+        for nome in ("pia", "forno"):
+            self.escrever("casa", nome, desc="adotado " + nome)
+        adotados, _ = self.porta.adotar_varios(["casa/pia", "casa/forno"], "estado inicial")
+        self.assertEqual(len(adotados), 2)
+        self.assertIn("eventos.jsonl", self.git("show", "--name-only", "--format=", "HEAD").split())
+        corpo = self.git("log", "-1", "--format=%B").splitlines()
+        self.assertIn("memoro adocao casa/pia", corpo)
+        self.assertIn("memoro adocao casa/forno", corpo)
+
+    def test_commit_que_falha_deixa_evento_ok_e_aviso(self):
+        # escolha: o evento já foi gravado e descreve o disco; o doutor (D7) acusa o commit que faltou
+        self.iniciar_git()
+        gancho = self.raiz / ".git" / "hooks" / "pre-commit"
+        gancho.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+        gancho.chmod(0o755)
+        r = self.porta.add("casa", "fogao", "d", "c\n")
+        self.assertTrue(any("sem commit" in a for a in r.avisos))
+        self.assertEqual([(e.op, e.id, e.ok) for e in self.eventos()][-1], ("add", "casa/fogao", True))
 
     def test_raiz_dentro_de_outro_repo_nao_commita_no_repo_de_fora(self):
         fora = self.raiz.parent
