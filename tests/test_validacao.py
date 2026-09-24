@@ -44,6 +44,44 @@ class TestRegraDeSegredo(unittest.TestCase):
         f = fato(corpo="exemplo %s  # pragma: allow-secret\n" % self.SEGREDOS["aws-access-key"])
         self.assertEqual(RegraDeSegredo().avaliar(pedido(f=f)), [])
 
+    # outros formatos reais, também montados por concatenação
+    SEGREDOS_EXTRA = {
+        "github-token": ["gh" + "o_" + "Z9y8" * 9, "github" + "_pat_" + "11ABCDEFG0" + "a" * 20],
+        "aws-access-key": ["AS" + "IA" + "QRSTUVWXYZ234567"],
+        "slack-token": ["xo" + "xp-" + "98765-4321-abcdef", "xo" + "xa-" + "2-abcdefghij"],
+        "private-key-block": ["-----BEGIN " + "PRIVATE KEY-----", "-----BEGIN OPENSSH " + "PRIVATE KEY-----",
+                              "-----BEGIN EC " + "PRIVATE KEY-----"],
+    }
+
+    NEGATIVOS = [
+        "commit 3f786850e387550fdab836ed7e6dc881de23001b corrigiu o bug",
+        "ver 3f78685 no log",
+        "id 123e4567-e89b-12d3-a456-426614174000 da sessão",
+        "a password do wifi fica com a Ana",
+        "trocar a senha do banco todo mês",
+        "o token expira em uma hora, renovar pelo painel",
+        "base64 curto: aGVsbG8gd29ybGQ=",
+        "investimento risk-free não existe",
+        "o desk-top novo e a task-list da semana",
+        "exportar AWS_ACCESS_KEY_ID e AWS_SECRET_ACCESS_KEY antes do deploy",
+        "repo em https://github.com/victorandraad/memoro/blob/main/README.md",
+        "git clone git@github.com:victorandraad/memoro.git",
+        "-----BEGIN PUBLIC KEY-----",
+        "cabeçalho eyJ sozinho não é jwt",
+    ]
+
+    def test_formatos_extra_sao_recusados(self):
+        for tipo, valores in self.SEGREDOS_EXTRA.items():
+            for valor in valores:
+                achados = RegraDeSegredo().avaliar(pedido(f=fato(corpo="x %s\n" % valor)))
+                self.assertEqual(len(achados), 1, valor)
+                self.assertIn(tipo, achados[0].mensagem)
+
+    def test_corpus_negativo_nao_e_barrado(self):
+        for texto in self.NEGATIVOS:
+            for f in (fato(corpo=texto + "\n"), fato(desc=texto)):
+                self.assertEqual(RegraDeSegredo().avaliar(pedido(f=f)), [], texto)
+
     def test_so_olha_escrita(self):
         f = fato(corpo=self.SEGREDOS["jwt"])
         self.assertEqual(RegraDeSegredo().avaliar(pedido(op="rm", f=f, motivo="x")), [])
