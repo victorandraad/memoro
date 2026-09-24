@@ -64,6 +64,11 @@ class Versionador:
         rels = self._relativos(caminhos)
         raiz = str(self._raiz)
         try:
+            # caminho apagado que o git nunca viu (fato de antes do git init) derruba add e commit
+            rastreados = subprocess.run(
+                ["git", "-C", raiz, "ls-files", "-z", "--"] + rels, capture_output=True, text=True,
+            ).stdout.split("\0")
+            rels = [r for r in rels if r in rastreados or os.path.lexists(os.path.join(raiz, r))]
             subprocess.run(["git", "-C", raiz, "add", "--"] + rels, capture_output=True)
             r = subprocess.run(
                 ["git", "-C", raiz, "commit", "-q", "-m", mensagem, "--"] + rels,
@@ -297,10 +302,13 @@ class PortaDeEscrita:
         raise FatoNaoEncontrado(ref, [str(f.id) for f in existentes])
 
     def _purga(self, dias):
-        removidos = self._repositorio.purgar(dias, self._relogio().date())
-        for caminho in removidos:
+        # um por um, evento antes de apagar: falha no meio deixa os seguintes intactos e sem evento
+        removidos = []
+        for caminho in self._repositorio.vencidos(dias, self._relogio().date()):
             ident, area = self._id_lixeira(caminho)
             self._registrar("purga", ident, area, "purga", True, "", "")
+            caminho.unlink()
+            removidos.append(caminho)
             self._versionador.commitar([caminho, self.diario.caminho], "memoro purga %s" % ident)
         return removidos
 

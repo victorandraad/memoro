@@ -114,7 +114,8 @@ class RepositorioDeFatos:
         origem.unlink()
         return destino
 
-    def purgar(self, dias, hoje):
+    def vencidos(self, dias, hoje):
+        """Arquivos da lixeira com removido_em há mais de `dias`; não apaga nada."""
         lixeira = self._raiz / "areas" / "_lixeira"
         if not lixeira.is_dir():
             return []
@@ -134,7 +135,6 @@ class RepositorioDeFatos:
             except (TypeError, ValueError):
                 continue
             if (hoje - dia).days > dias:
-                caminho.unlink()
                 removidos.append(caminho)
         return removidos
 
