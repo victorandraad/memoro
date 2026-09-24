@@ -20,6 +20,10 @@ class DiarioDeEventos:
     def __init__(self, caminho):
         self._caminho = Path(caminho)
 
+    @property
+    def caminho(self):
+        return self._caminho
+
     def registrar(self, evento):
         self.registrar_varios((evento,))
 

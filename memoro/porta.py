@@ -235,8 +235,9 @@ class PortaDeEscrita:
         if eventos:
             self.diario.registrar_varios(eventos)
         if caminhos:
-            mensagem = "memoro adocao %s" % adotados[0].id if len(adotados) == 1 else "memoro adocao"
-            aviso_git = self._versionador.commitar(caminhos, mensagem)
+            linhas = ["memoro adocao %s" % r.id for r in adotados]
+            mensagem = linhas[0] if len(linhas) == 1 else "memoro adocao\n\n" + "\n".join(linhas)
+            aviso_git = self._versionador.commitar(caminhos + [self.diario.caminho], mensagem)
             if aviso_git:
                 adotados = [Resultado(r.id, r.caminho, r.avisos + (aviso_git,)) for r in adotados]
         return adotados, recusados
@@ -299,8 +300,8 @@ class PortaDeEscrita:
         removidos = self._repositorio.purgar(dias, self._relogio().date())
         for caminho in removidos:
             ident, area = self._id_lixeira(caminho)
-            aviso = self._versionador.commitar([caminho], "memoro purga %s" % ident)
-            self._registrar("purga", ident, area, "purga", True, aviso or "", "")
+            self._registrar("purga", ident, area, "purga", True, "", "")
+            self._versionador.commitar([caminho, self.diario.caminho], "memoro purga %s" % ident)
         return removidos
 
     def _validar(self, op, ident, fato, motivo, novo_mesmo_assim=False, existentes=None, areas=None, grafo=None):
@@ -321,14 +322,19 @@ class PortaDeEscrita:
         return [a.mensagem for a in achados if not a.recusa]
 
     def _fechar(self, op, ident, caminho, tocados, avisos, motivo=""):
-        aviso_git = self._versionador.commitar(tocados, "memoro %s %s" % (op, ident))
-        if aviso_git:
-            avisos.append(aviso_git)
+        # evento (com fsync) antes, e no mesmo commit do fato: crash no meio deixa evento sem
+        # commit, nunca commit sem evento. Commit que falha mantém o evento, que descreve o disco;
+        # quem acusa o commit faltante é o doutor (D7).
         blob = caminho.read_bytes()
         resumo = "+%d linhas" % len(blob.decode("utf-8", errors="replace").splitlines())
         self._registrar(
             op, str(ident), ident.area, resumo, True, motivo, hashlib.sha256(blob).hexdigest(),
         )
+        aviso_git = self._versionador.commitar(
+            list(tocados) + [self.diario.caminho], "memoro %s %s" % (op, ident),
+        )
+        if aviso_git:
+            avisos.append(aviso_git)
         return Resultado(ident, caminho, tuple(avisos))
 
     def _evento(self, op, ident, area, resumo, ok, motivo, hash_do_conteudo):
