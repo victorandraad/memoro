@@ -7,11 +7,13 @@ from pathlib import Path
 from memoro.formato import LeitorDeFrontmatter
 from memoro.porta import PortaDeEscrita, Recusa
 from memoro.repositorio import RepositorioDeFatos
-from tests.apoio import ComRaiz
+from tests.apoio import ComRaiz, em_portugues
 
 SPEC = Path(__file__).resolve().parent.parent / "SPEC.md"
 
 _BLOCO = re.compile(r"```fato (\w+)(?::(.*?))?\n(.*?)\n```", re.S)
+
+setUpModule = em_portugues
 
 
 def _blocos():

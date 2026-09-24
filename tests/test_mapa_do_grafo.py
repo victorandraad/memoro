@@ -10,10 +10,12 @@ from memoro.adaptador_do_mapa import AdaptadorDoMapa
 from memoro.grafo import GrafoDeFatos
 from memoro.mapa import ConfigDoMapa, GeradorDeMapa
 from memoro.repositorio import RepositorioDeFatos
-from tests.apoio import ComRaiz
+from tests.apoio import ComRaiz, em_portugues
 
 HOSTIL_A = "<script>alert(1)</script> fecha </script> e segue"
 HOSTIL_B = '"><img src=x onerror=alert(2)> \\ fim'
+
+setUpModule = em_portugues
 
 
 class ComAcervo(ComRaiz):

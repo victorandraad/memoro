@@ -9,6 +9,7 @@ from pathlib import Path
 
 from memoro.dominio import Fato, IdDeFato, IdInvalido
 from memoro.formato import EscritorDeFrontmatter, LeitorDeFrontmatter
+from memoro.mensagens import t
 
 
 class ErroDeRepositorio(Exception):
@@ -21,15 +22,15 @@ class FatoNaoEncontrado(ErroDeRepositorio):
         # ponytail: um palpite (cutoff 0.5); índice invertido se o acervo crescer
         parecidos = difflib.get_close_matches(ref, sorted(set(ids)), n=1, cutoff=0.5)
         if parecidos:
-            extra = " (quis dizer %s?)" % parecidos[0]
-        super().__init__("fato não encontrado: %s%s" % (ref, extra))
+            extra = t("quis-dizer", parecidos[0])
+        super().__init__(t("nao-encontrado", ref, extra))
 
 
 class ReferenciaAmbigua(ErroDeRepositorio):
     def __init__(self, candidatas):
         self.candidatas = list(candidatas)
         super().__init__(
-            "referência ambígua: " + ", ".join(str(c) for c in self.candidatas)
+            t("referencia-ambigua", ", ".join(str(c) for c in self.candidatas))
         )
 
 

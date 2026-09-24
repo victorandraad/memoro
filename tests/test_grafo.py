@@ -4,7 +4,9 @@ import json
 
 from memoro.grafo import Ambiguo, Aresta, GrafoDeFatos, No, Pendente
 from memoro.repositorio import RepositorioDeFatos
-from tests.apoio import ComRaiz
+from tests.apoio import ComRaiz, em_portugues
+
+setUpModule = em_portugues
 
 
 class ComGrafo(ComRaiz):

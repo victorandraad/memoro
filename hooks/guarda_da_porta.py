@@ -39,9 +39,14 @@ class GuardaDaPorta:
                   or self._mesmo_prefixo(os.path.abspath(caminho), areas_lexical))
         if not dentro:
             return None
+        if self._ambiente.get("MEMORO_LANG", "").strip().lower().startswith("pt"):
+            return (
+                "escrita direta em áreas da memória recusada: "
+                "use 'memoro add', 'memoro update' ou 'memoro rm'.\n"
+            )
         return (
-            "escrita direta em áreas da memória recusada: "
-            "use 'memoro add', 'memoro update' ou 'memoro rm'.\n"
+            "direct write to memory areas refused: "
+            "use 'memoro add', 'memoro update' or 'memoro rm'.\n"
         )
 
     def _raiz(self):

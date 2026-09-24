@@ -9,10 +9,12 @@ from memoro.diario import DiarioDeEventos
 from memoro.dominio import Evento, Fato, IdDeFato
 from memoro.porta import PortaDeEscrita, Recusa
 from memoro.repositorio import RepositorioDeFatos
-from tests.apoio import ComRaiz
+from tests.apoio import ComRaiz, em_portugues
 
 GITHUB = "gh" + "p_" + "a1B2" * 9
 AWS_TEMPORARIA = "AS" + "IA" + "ABCDEFGHIJKLMNOP"
+
+setUpModule = em_portugues
 
 
 class TestSegredoForaDoCorpo(ComRaiz):

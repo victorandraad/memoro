@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from memoro.dominio import Relacao
 from memoro.grafo import GrafoDeFatos
+from memoro.mensagens import t
 
 
 @dataclass(frozen=True)
@@ -50,10 +51,10 @@ class RegraDeSegredo(Regra):
             return []
         # uses e scope também viram arquivo e motivo de recusa no diário: passam pela mesma peneira
         campos = (
-            ("descrição", pedido.fato.descricao),
+            (t("campo-descricao"), pedido.fato.descricao),
             ("uses", "\n".join(pedido.fato.uses)),
             ("scope", "\n".join(pedido.fato.scope)),
-            ("corpo", pedido.fato.corpo),
+            (t("campo-corpo"), pedido.fato.corpo),
         )
         achados = []
         for campo, texto in campos:
@@ -62,7 +63,7 @@ class RegraDeSegredo(Regra):
                     continue
                 for tipo, padrao in self.PADROES.items():
                     if padrao.search(linha):
-                        achados.append(Achado(True, "segredo do tipo %s em %s, linha %d" % (tipo, campo, n)))
+                        achados.append(Achado(True, t("segredo", tipo, campo, n)))
         return achados
 
 
@@ -72,7 +73,7 @@ class RegraDeNomeDuplicado(Regra):
             return []
         for existente in pedido.existentes:
             if existente.id == pedido.id:
-                return [Achado(True, "id já existe; use update")]
+                return [Achado(True, t("id-existe"))]
         return []
 
 
@@ -87,10 +88,10 @@ class RegraDeAreaExistente(Regra):
         extra = ""
         parecidos = difflib.get_close_matches(topo, existentes, n=1, cutoff=0.5)
         if parecidos:
-            extra = " (quis dizer %s?)" % parecidos[0]
+            extra = t("quis-dizer", parecidos[0])
         return [Achado(
             True,
-            "área inexistente: %s%s; existentes: %s" % (topo, extra, ", ".join(existentes)),
+            t("area-inexistente", topo, extra, ", ".join(existentes)),
         )]
 
 
@@ -99,7 +100,7 @@ class RegraDeRelacaoConhecida(Regra):
         achados = []
         for relacao in pedido.fato.relacoes:
             if not relacao.conhecida:
-                achados.append(Achado(True, "relação desconhecida: %s" % relacao.tipo))
+                achados.append(Achado(True, t("relacao-desconhecida", relacao.tipo)))
         return achados
 
 
@@ -109,7 +110,7 @@ class RegraDeMotivoNaRemocao(Regra):
             return []
         if (pedido.motivo or "").strip():
             return []
-        return [Achado(True, "rm exige motivo")]
+        return [Achado(True, t("rm-sem-motivo"))]
 
 
 class RegraDeReferencias(Regra):
@@ -128,7 +129,7 @@ class RegraDeReferencias(Regra):
                 continue
             if not Relacao.de_texto(pendente.alvo).conhecida:
                 continue
-            achados.append(Achado(True, "uses aponta pro vazio: %s" % pendente.alvo))
+            achados.append(Achado(True, t("uses-vazio", pendente.alvo)))
         for ambiguo in grafo.ambiguos_de(ident):
             achados.append(Achado(False, ambiguo.mensagem))
         return achados
@@ -170,7 +171,7 @@ class RegraDeQuaseDuplicata(Regra):
     def _recusa(self, existente):
         return Achado(
             True,
-            "parecido com %s: use update ou passe --novo-mesmo-assim" % existente.id,
+            t("parecido", existente.id),
         )
 
     def _normalizar(self, texto):

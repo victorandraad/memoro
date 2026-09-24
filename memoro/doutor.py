@@ -12,7 +12,7 @@ from memoro.diario import DiarioDeEventos
 from memoro.dominio import Fato, IdDeFato, IdInvalido
 from memoro.formato import LeitorDeFrontmatter, problemas_do_frontmatter
 from memoro.grafo import GrafoDeFatos
-
+from memoro.mensagens import t
 
 _OPS_VIVOS = frozenset({"add", "update", "adocao"})
 _OPS_MORTOS = frozenset({"rm", "purga"})
@@ -35,7 +35,7 @@ class Doutor:
     def examinar(self):
         achados = []
         for numero, _linha in self._diario.linhas_corrompidas():
-            achados.append(Achado("diario-corrompido", "", "linha %d" % numero))
+            achados.append(Achado("diario-corrompido", "", t("linha", numero)))
         ultimo_ok = {}
         for evento in self._diario.ler():
             if evento.ok:
@@ -50,16 +50,16 @@ class Doutor:
             if erro is not None:
                 achados.append(Achado("frontmatter-invalido", rel, erro))
                 if digest is not None and ev is not None and ev.op in _OPS_VIVOS and digest != ev.hash_do_conteudo:
-                    achados.append(Achado("alterado-fora-da-porta", rel, "hash diverge do diário"))
+                    achados.append(Achado("alterado-fora-da-porta", rel, t("hash-diverge")))
                 continue
             if ev is None or ev.op in _OPS_MORTOS:
-                achados.append(Achado("sem-evento", rel, "arquivo sem evento vivo na porta"))
+                achados.append(Achado("sem-evento", rel, t("sem-evento-vivo")))
             elif ev.op in _OPS_VIVOS and digest != ev.hash_do_conteudo:
-                achados.append(Achado("alterado-fora-da-porta", rel, "hash diverge do diário"))
+                achados.append(Achado("alterado-fora-da-porta", rel, t("hash-diverge")))
             validos.append(self._fato_de(ident, texto))
         for ident, ev in ultimo_ok.items():
             if ev.op in _OPS_VIVOS and ident not in presentes:
-                achados.append(Achado("evento-sem-arquivo", ident, "arquivo ausente"))
+                achados.append(Achado("evento-sem-arquivo", ident, t("arquivo-ausente")))
         grafo = GrafoDeFatos(validos)
         for no in grafo.nos():
             pendentes = grafo.pendentes_de(no.id)
@@ -84,9 +84,9 @@ class Doutor:
         )
         achados = []
         for (op, ident), n in (eventos - commits).items():
-            achados.extend([Achado("evento-sem-commit", ident, "%s sem commit no git" % op)] * n)
+            achados.extend([Achado("evento-sem-commit", ident, t("evento-sem-commit", op))] * n)
         for (op, ident), n in (commits - eventos).items():
-            achados.extend([Achado("commit-sem-evento", ident, "commit memoro %s sem evento no diário" % op)] * n)
+            achados.extend([Achado("commit-sem-evento", ident, t("commit-sem-evento", op))] * n)
         return achados
 
     def _commits_canonicos(self):
@@ -134,12 +134,12 @@ class Doutor:
         try:
             texto = blob.decode("utf-8")
         except UnicodeDecodeError:
-            return None, blob, None, "utf-8 inválido"
+            return None, blob, None, t("utf8-invalido")
         area, _, nome = rel.rpartition("/")
         try:
             ident = IdDeFato(area, nome)
         except IdInvalido:
-            return None, blob, texto, "nome de arquivo não é id válido"
+            return None, blob, texto, t("nome-invalido")
         problemas = problemas_do_frontmatter(texto, ident.area, ident.nome)
         if problemas:
             return ident, blob, texto, "; ".join(problemas)

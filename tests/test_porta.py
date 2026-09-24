@@ -7,7 +7,9 @@ from datetime import datetime, timedelta, timezone
 
 from memoro.porta import PortaDeEscrita, Recusa
 from memoro.repositorio import RepositorioDeFatos
-from tests.apoio import ComRaiz
+from tests.apoio import ComRaiz, em_portugues
+
+setUpModule = em_portugues
 
 
 class Relogio:

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 
-from tests.apoio import ComRaiz
+from tests.apoio import ComRaiz, em_portugues
+
+setUpModule = em_portugues
 
 
 class TestCliEscrita(ComRaiz):

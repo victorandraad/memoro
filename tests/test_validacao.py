@@ -5,6 +5,9 @@ import unittest
 from memoro.dominio import Fato, IdDeFato
 from memoro.validacao import (Achado, Pedido, RegraDeAreaExistente, RegraDeMotivoNaRemocao,
                               RegraDeNomeDuplicado, RegraDeRelacaoConhecida, RegraDeSegredo, Validador)
+from tests.apoio import em_portugues
+
+setUpModule = em_portugues
 
 
 def fato(area="casa", nome="fogao", desc="quatro bocas", corpo="acende com fósforo\n", uses=()):

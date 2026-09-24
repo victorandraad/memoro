@@ -12,6 +12,7 @@ from memoro.diario import DiarioDeEventos
 from memoro.dominio import Evento, Fato, IdDeFato, IdInvalido
 from memoro.formato import LeitorDeFrontmatter, problemas_do_frontmatter
 from memoro.grafo import GrafoDeFatos
+from memoro.mensagens import t
 from memoro.repositorio import FatoNaoEncontrado, ReferenciaAmbigua, RepositorioDeFatos
 from memoro.validacao import Pedido, Validador
 
@@ -76,10 +77,10 @@ class Versionador:
                 text=True,
             )
         except OSError as exc:
-            return "gravado em disco, sem commit: %s" % exc
+            return t("sem-commit", exc)
         if r.returncode != 0:
             detalhe = (r.stderr or r.stdout or "").strip()
-            return "gravado em disco, sem commit: %s" % detalhe
+            return t("sem-commit", detalhe)
         return None
 
     def _e_topo(self):
@@ -249,14 +250,14 @@ class PortaDeEscrita:
 
     def _adotar_um(self, ref, motivo, existentes, areas, grafo=None):
         if not (motivo or "").strip():
-            raise Recusa("adoção exige motivo")
+            raise Recusa(t("adocao-sem-motivo"))
         ident, caminho = self._resolver_para_adotar(ref, existentes)
         try:
             texto = caminho.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
-            raise Recusa("frontmatter inválido")
+            raise Recusa(t("frontmatter-invalido"))
         if problemas_do_frontmatter(texto, ident.area, ident.nome):
-            raise Recusa("frontmatter inválido")
+            raise Recusa(t("frontmatter-invalido"))
         campos, corpo = LeitorDeFrontmatter().ler(texto)
         fato = Fato(
             ident,
@@ -287,7 +288,7 @@ class PortaDeEscrita:
             return atual.id, self._repositorio.caminho_de(atual.id)
         except (FatoNaoEncontrado, ReferenciaAmbigua):
             if ident is None:
-                raise Recusa("frontmatter inválido")
+                raise Recusa(t("frontmatter-invalido"))
             raise
 
     def _achar_no_retrato(self, ref, existentes):

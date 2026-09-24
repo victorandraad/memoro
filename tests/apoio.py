@@ -6,6 +6,14 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
+
+
+def em_portugues():
+    """setUpModule de quem afirma o texto em português: a saída padrão é inglês."""
+    patch = mock.patch.dict(os.environ, {"MEMORO_LANG": "pt"})
+    patch.start()
+    unittest.addModuleCleanup(patch.stop)
 
 
 class ComRaiz(unittest.TestCase):

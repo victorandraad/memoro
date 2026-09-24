@@ -6,7 +6,9 @@ import subprocess
 
 from memoro.diario import DiarioDeEventos
 from memoro.doutor import Doutor
-from tests.apoio import ComRaiz
+from tests.apoio import ComRaiz, em_portugues
+
+setUpModule = em_portugues
 
 
 class ComPorta(ComRaiz):

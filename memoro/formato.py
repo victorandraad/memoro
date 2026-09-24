@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+from memoro.mensagens import t
+
 _FRONT = re.compile(r"^---\n(.*?)\n---\n", re.S)
 
 
@@ -36,13 +38,13 @@ class LeitorDeFrontmatter:
 def problemas_do_frontmatter(texto, area, nome):
     """Inconsistências entre o bloco --- e o caminho do arquivo; vazio se alinhado."""
     if _FRONT.match(texto) is None:
-        return ["sem bloco de frontmatter"]
+        return [t("sem-frontmatter")]
     campos, _ = LeitorDeFrontmatter().ler(texto)
     problemas = []
     if campos.get("name") != nome:
-        problemas.append("name diferente do arquivo")
+        problemas.append(t("name-diferente"))
     if campos.get("area") != area:
-        problemas.append("area diferente da pasta")
+        problemas.append(t("area-diferente"))
     return problemas
 
 

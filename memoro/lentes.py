@@ -4,6 +4,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from memoro.mensagens import t
+
 
 class ErroDeLente(Exception):
     """lente desconhecida ou alvo que não é pasta existente."""
@@ -30,13 +32,13 @@ class Lentes:
         if lente not in self._mapa:
             disponiveis = ", ".join(self.nomes())
             raise ErroDeLente(
-                "lente desconhecida: %s\nlentes disponíveis: %s" % (lente, disponiveis)
+                t("lente-desconhecida", lente, disponiveis)
             )
         alvos = [str(a) for a in list(self._mapa[lente])]
         ruins = [a for a in alvos if a.strip("/") not in self._areas]
         if ruins:
             raise ErroDeLente(
-                "lente %r: alvo sem pasta: %s" % (lente, ", ".join(sorted(ruins)))
+                t("lente-sem-pasta", lente, ", ".join(sorted(ruins)))
             )
         return alvos
 

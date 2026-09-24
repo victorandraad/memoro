@@ -15,9 +15,14 @@ from memoro.dominio import IdInvalido
 from memoro.doutor import Doutor
 from memoro.grafo import GrafoDeFatos
 from memoro.lentes import ErroDeLente, Lentes, Recall
+from memoro import mensagens
+from memoro.mensagens import t, tipo
 from memoro.mapa import ComandoMapa, ConfigDoMapa, GeradorDeMapa
 from memoro.porta import PortaDeEscrita, Recusa
 from memoro.repositorio import ErroDeRepositorio, RepositorioDeFatos
+
+
+_MOTIVOS_DO_RECALL = {"filho": "motivo-filho", "herda": "motivo-herda"}
 
 
 def _csv(valor):
@@ -61,7 +66,7 @@ class Comando(ABC):
             pass
         rel_s = rel.as_posix()
         for aviso in resultado.avisos:
-            self._cli.erro.write("aviso: %s\n" % aviso)
+            self._cli.erro.write("%s\n" % t("aviso", aviso))
         if args.json:
             json.dump(
                 {"id": str(resultado.id), "caminho": rel_s, "avisos": list(resultado.avisos)},
@@ -206,19 +211,20 @@ class ComandoRecall(Comando):
             )
             self._cli.saida.write("\n")
             return 0
-        rotulo = args.lens or args.scope or "tudo"
+        rotulo = args.lens or args.scope or t("recall-tudo")
         n = len(resultado.itens)
         if resultado.cortados:
-            cabeca = "# recall: %s (%d fatos, %d cortados pelo teto)" % (
-                rotulo, n, resultado.cortados,
-            )
+            cabeca = t("recall-cortados", rotulo, n, resultado.cortados)
+        elif n == 1:
+            cabeca = t("recall-1", rotulo)
         else:
-            cabeca = "# recall: %s (%d fatos)" % (rotulo, n)
+            cabeca = t("recall-n", rotulo, n)
         self._cli.saida.write("%s\n" % cabeca)
         for item in resultado.itens:
             linha = "- %s: %s" % (item.fato.id, item.fato.descricao)
             if item.motivo != "escopo":
-                linha += " (%s)" % item.motivo
+                chave = _MOTIVOS_DO_RECALL.get(item.motivo)
+                linha += " (%s)" % (t(chave) if chave else item.motivo)
             self._cli.saida.write("%s\n" % linha)
         return 0
 
@@ -254,7 +260,7 @@ class ComandoAdd(Comando):
         subparser.add_argument("--desc", required=True)
         subparser.add_argument("--uses", default="")
         subparser.add_argument("--scope", default="")
-        subparser.add_argument("--novo-mesmo-assim", action="store_true")
+        subparser.add_argument("--new-anyway", "--novo-mesmo-assim", dest="novo_mesmo_assim", action="store_true", help=t("ajuda-novo"))
 
     def executar(self, args):
         corpo = self._ler(so_se_nao_tty=True)
@@ -294,7 +300,7 @@ class ComandoRm(Comando):
 
     def configurar(self, subparser):
         subparser.add_argument("ref")
-        subparser.add_argument("--motivo", default="")
+        subparser.add_argument("--reason", "--motivo", dest="motivo", default="", help=t("ajuda-motivo"))
 
     def executar(self, args):
         return self._emitir(self._porta().rm(args.ref, args.motivo), args)
@@ -329,7 +335,7 @@ class ComandoDoMapa(Comando):
     aliases = ("map",)
 
     def configurar(self, subparser):
-        subparser.add_argument("--titulo", default="Memória")
+        subparser.add_argument("--titulo", default=t("titulo-do-mapa"))
         ComandoMapa(lambda: None, self._cli.raiz).configurar(subparser)
 
     def executar(self, args):
@@ -355,13 +361,13 @@ class ComandoDoutor(Comando):
     aliases = ("doctor",)
 
     def configurar(self, subparser):
-        subparser.add_argument("--adotar", default=None)
-        subparser.add_argument("--motivo", default=None)
+        subparser.add_argument("--adopt", "--adotar", dest="adotar", default=None, help=t("ajuda-adotar"))
+        subparser.add_argument("--reason", "--motivo", dest="motivo", default=None, help=t("ajuda-motivo"))
 
     def executar(self, args):
         if args.adotar is not None:
             if not args.motivo:
-                self._cli.erro.write("doutor --adotar exige --motivo\n")
+                self._cli.erro.write("%s\n" % t("adotar-sem-motivo"))
                 return 1
             return self._emitir(self._porta().adotar(args.adotar, args.motivo), args)
         achados = Doutor(self._cli.raiz).examinar()
@@ -373,10 +379,10 @@ class ComandoDoutor(Comando):
             json.dump(payload, self._cli.saida, ensure_ascii=False)
             self._cli.saida.write("\n")
         elif not achados:
-            self._cli.saida.write("limpo\n")
+            self._cli.saida.write("%s\n" % t("limpo"))
         else:
             for achado in achados:
-                self._cli.saida.write("%s %s: %s\n" % (achado.tipo, achado.id, achado.detalhe))
+                self._cli.saida.write("%s %s: %s\n" % (tipo(achado.tipo), achado.id, achado.detalhe))
         return 0 if not achados else 1
 
 
@@ -385,7 +391,7 @@ class ComandoAdotarTudo(Comando):
     aliases = ("adopt-all",)
 
     def configurar(self, subparser):
-        subparser.add_argument("--motivo", required=True)
+        subparser.add_argument("--reason", "--motivo", dest="motivo", required=True, help=t("ajuda-motivo"))
 
     def executar(self, args):
         tipos = ("sem-evento", "alterado-fora-da-porta", "frontmatter-invalido")
@@ -399,7 +405,7 @@ class ComandoAdotarTudo(Comando):
         adotados, recusados = self._porta().adotar_varios(refs, args.motivo)
         for ident, mensagem in recusados:
             self._cli.erro.write("%s: %s\n" % (ident, mensagem))
-        self._cli.saida.write("%d adotados\n" % len(adotados))
+        self._cli.saida.write("%s\n" % t("adotados", len(adotados)))
         return 1 if recusados else 0
 
 
@@ -450,18 +456,26 @@ class Cli:
         return Path(self.ambiente["HOME"]) / "memoro"
 
     def executar(self, argv):
-        analisador = argparse.ArgumentParser(prog="memoro")
+        anterior = mensagens.sobrescrita
+        mensagens.sobrescrita = self.ambiente.get("MEMORO_LANG", "")
+        try:
+            return self._executar(argv)
+        finally:
+            mensagens.sobrescrita = anterior
+
+    def _executar(self, argv):
+        analisador = argparse.ArgumentParser(prog="memoro", description=t("ajuda-memoro"))
         subs = analisador.add_subparsers(dest="comando", required=True)
         for comando in self._comandos:
             extras = {}
             if comando.aliases:
                 extras["aliases"] = list(comando.aliases)
-            sub = subs.add_parser(comando.nome, **extras)
+            sub = subs.add_parser(comando.nome, help=t("ajuda-" + comando.nome), **extras)
             comando.configurar(sub)
             sub.add_argument("--json", action="store_true")
             sub.set_defaults(_comando=comando)
-        antigo = sys.stderr
-        sys.stderr = self.erro
+        antigo, antigo_out = sys.stderr, sys.stdout
+        sys.stderr, sys.stdout = self.erro, self.saida
         try:
             try:
                 args = analisador.parse_args(list(argv))
@@ -473,11 +487,11 @@ class Cli:
                 self.erro.write("%s\n" % e.code)
                 return 2
         finally:
-            sys.stderr = antigo
+            sys.stderr, sys.stdout = antigo, antigo_out
         try:
             return args._comando.executar(args)
         except Recusa as exc:
-            self.erro.write("recusado: %s\n" % exc)
+            self.erro.write("%s\n" % t("recusado", exc))
             if args.json:
                 json.dump({"ok": False, "motivo": str(exc)}, self.saida, ensure_ascii=False)
                 self.saida.write("\n")

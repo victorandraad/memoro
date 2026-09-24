@@ -4,6 +4,7 @@ import re
 from dataclasses import asdict, dataclass
 
 from memoro.dominio import Relacao
+from memoro.mensagens import t
 
 
 @dataclass(frozen=True, order=True)
@@ -45,10 +46,10 @@ class Ambiguo:
 
     @property
     def mensagem(self):
-        opcoes = " ou ".join(self.candidatas)
+        opcoes = t("ou").join(self.candidatas)
         if self.tipo == "link":
-            return "ambíguo: [[%s]] em %s pode ser %s" % (self.alvo, self.citado_em, opcoes)
-        return "ambíguo: uses %s em %s pode ser %s" % (self.alvo, self.citado_em, opcoes)
+            return t("ambiguo-link", self.alvo, self.citado_em, opcoes)
+        return t("ambiguo-uses", self.alvo, self.citado_em, opcoes)
 
 
 @dataclass(frozen=True)

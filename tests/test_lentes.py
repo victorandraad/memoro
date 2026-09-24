@@ -5,7 +5,9 @@ import json
 from memoro.grafo import GrafoDeFatos
 from memoro.lentes import ErroDeLente, Lentes, Recall
 from memoro.repositorio import RepositorioDeFatos
-from tests.apoio import ComRaiz
+from tests.apoio import ComRaiz, em_portugues
+
+setUpModule = em_portugues
 
 
 class ComRecall(ComRaiz):
@@ -133,9 +135,10 @@ class TestCliRecall(ComRecall):
         from memoro.cli import Cli
         saida = io.StringIO()
         Cli(entrada=io.StringIO(), saida=saida, erro=io.StringIO(),
-            ambiente={"MEMORO_HOME": str(self.raiz), "MEMORO_RECALL_CAP": "2"}).executar(["recall", "--lens", "lar"])
+            ambiente={"MEMORO_HOME": str(self.raiz), "MEMORO_RECALL_CAP": "2",
+                      "MEMORO_LANG": "en"}).executar(["recall", "--lens", "lar"])
         linhas = saida.getvalue().splitlines()
-        self.assertEqual(linhas[0], "# recall: lar (2 fatos, 5 cortados pelo teto)")
+        self.assertEqual(linhas[0], "# recall: lar (2 facts, 5 cut by the cap)")
         self.assertEqual(len(linhas), 3)
 
     def test_list_lenses_em_texto_e_json(self):
